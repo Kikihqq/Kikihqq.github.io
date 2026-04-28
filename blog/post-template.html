@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Post Title — Huiqing Zhang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
+  <style>
+    .post {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 28px 80px;
+    }
+    .post-meta {
+      font-family: var(--serif);
+      color: var(--lotus-deep);
+      margin-bottom: 8px;
+    }
+    .post h1 {
+      font-family: var(--serif);
+      font-size: 2.2rem;
+      font-weight: 600;
+      margin: 0 0 24px;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+    .post h2 {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      margin-top: 32px;
+      color: var(--ink);
+    }
+    .post p { margin: 0 0 16px; }
+    .post code {
+      background: var(--lotus-soft);
+      color: var(--lotus-deep);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.88em;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 24px;
+      font-size: 0.92rem;
+      color: var(--lotus-deep);
+      border: 0;
+    }
+    .back-link:hover { color: var(--ink); }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-brand">Huiqing&nbsp;Zhang</a>
+      <ul class="nav-links">
+        <li><a href="../index.html#about">About</a></li>
+        <li><a href="../index.html#publications">Publications</a></li>
+        <li><a href="../index.html#blog">Blog</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <article class="post">
+    <a href="../index.html#blog" class="back-link">← Back to all posts</a>
+    <p class="post-meta">2025 · 09 · 01 · Notes</p>
+    <h1>Post Title Goes Here</h1>
+
+    <p>
+      This is a placeholder post. Duplicate this file inside <code>blog/</code> and rename it
+      (for example <code>2025-09-01-3dgs-notes.html</code>) to start a new entry. Update the
+      title, date, and content below.
+    </p>
+
+    <h2>A subheading</h2>
+    <p>
+      Write your thoughts in normal paragraphs. Inline links work as expected, e.g.
+      <a href="https://yizhenlao.github.io/" target="_blank" rel="noopener">my advisor's homepage</a>.
+    </p>
+
+    <h2>Another subheading</h2>
+    <p>
+      Add more sections as you like. When you're done, also add a card for this post inside
+      the <code>#blog</code> section in <code>index.html</code> so visitors can find it.
+    </p>
+  </article>
+
+  <footer class="footer">
+    <p>© <span id="year"></span> Huiqing Zhang.</p>
+  </footer>
+
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

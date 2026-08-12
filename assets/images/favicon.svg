@@ -1,12 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="fg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%"   stop-color="#a594c4"/>
-      <stop offset="100%" stop-color="#8aa6c2"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" fill="url(#fg)" rx="14"/>
-  <text x="32" y="46" text-anchor="middle"
-        font-family="Cormorant Garamond, Georgia, serif"
-        font-size="38" font-weight="600" fill="#fcfbfe">H</text>
+  <rect width="64" height="64" fill="#17140f" rx="14"/>
+  <circle cx="32" cy="32" r="11" fill="#f3d9d5"/>
+  <g stroke="#f3d9d5" stroke-width="3.4" stroke-linecap="round">
+    <line x1="32" y1="8"  x2="32" y2="16"/>
+    <line x1="32" y1="48" x2="32" y2="56"/>
+    <line x1="8"  y1="32" x2="16" y2="32"/>
+    <line x1="48" y1="32" x2="56" y2="32"/>
+    <line x1="14.7" y1="14.7" x2="20.3" y2="20.3"/>
+    <line x1="43.7" y1="43.7" x2="49.3" y2="49.3"/>
+    <line x1="14.7" y1="49.3" x2="20.3" y2="43.7"/>
+    <line x1="43.7" y1="20.3" x2="49.3" y2="14.7"/>
+  </g>
 </svg>

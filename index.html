@@ -19,38 +19,93 @@
       <a href="#top" class="nav-brand">Huiqing&nbsp;Zhang</a>
       <ul class="nav-links">
         <li><a href="#about">About</a></li>
-        <li><a href="#news">News</a></li>
-        <li><a href="#research">Research</a></li>
         <li><a href="#publications">Publications</a></li>
-        <li><a href="#experience">Experience</a></li>
-        <li><a href="#blog">Blog</a></li>
+        <li><a href="cv.html">CV</a></li>
+        <li><a href="blog/index.html">Blog</a></li>
       </ul>
     </div>
   </nav>
 
-  <!-- ====== HERO / ABOUT ====== -->
+  <!-- ====== HERO / ABOUT (merged) ====== -->
   <header id="top" class="hero">
     <div class="hero-inner">
-      <div class="hero-photo">
-        <!-- Replace assets/images/avatar.jpg with your own photo -->
-        <img src="assets/images/avatar.jpg" alt="Huiqing Zhang"
-             onerror="this.onerror=null;this.src='assets/images/avatar-placeholder.svg';" />
+      <div class="hero-side">
+        <!--
+          Photo collage: one large frame plus two overlapping corner prints
+          on a flat sage block; click/tap opens a swipeable gallery of every
+          photo listed in data-gallery below. Add more photos by dropping
+          files in assets/images/gallery/ and extending the comma-separated
+          list (repeats are fine as filler).
+        -->
+        <button type="button" class="hero-photo-stack" id="photoStack"
+                data-gallery="assets/images/avatar.jpg,assets/images/avatar.jpg,assets/images/avatar.jpg"
+                aria-label="Open photo gallery">
+          <span class="stack-block" aria-hidden="true"></span>
+          <img class="stack-photo stack-photo-1" src="assets/images/avatar.jpg" alt="Huiqing Zhang"
+               onerror="this.onerror=null;this.src='assets/images/avatar-placeholder.svg';" />
+          <img class="stack-photo stack-photo-2" src="assets/images/avatar.jpg" alt="" aria-hidden="true" />
+          <img class="stack-photo stack-photo-3" src="assets/images/avatar.jpg" alt="" aria-hidden="true" />
+          <span class="stack-hint">View photos</span>
+        </button>
+        <div class="hero-meta">
+          <p class="hero-role">
+            Research Assistant, <a href="https://yizhenlao.github.io/" target="_blank" rel="noopener">3DXLab</a>, Hunan University
+          </p>
+          <p class="hero-contact">
+            <a href="mailto:huiq@hnu.edu.cn">huiq@hnu.edu.cn</a> · Changsha, China
+          </p>
+          <div class="hero-icons">
+            <a href="mailto:huiq@hnu.edu.cn" title="Email">Email</a>
+            <a href="https://scholar.google.com/citations?user=GWW1uj4AAAAJ&hl=zh-CN" target="_blank" rel="noopener" title="Google Scholar">Google Scholar</a>
+            <a href="https://github.com/Kikihqq" target="_blank" rel="noopener" title="GitHub">GitHub</a>
+            <a href="assets/cv.pdf" target="_blank" rel="noopener" title="CV">CV</a>
+          </div>
+        </div>
       </div>
-      <div class="hero-text">
+      <div class="hero-text" id="about">
         <h1>Huiqing Zhang <span class="hero-zh">张惠晴</span></h1>
-        <p class="hero-role">
-          <!-- Lecturer, Pingxiang University<br /> -->
-          Research Assistant, <a href="https://yizhenlao.github.io/" target="_blank" rel="noopener">3DXLab</a>, Hunan University
+        <p class="hero-vision">
+          My research vision: make neural rendering and foundation 3D models
+          <strong>robust, geometrically faithful, and genuinely useful in the real world.</strong>
         </p>
-        <p class="hero-contact">
-          <a href="mailto:huiq@hnu.edu.cn">huiq@hnu.edu.cn</a> ·
-          Changsha, China
-        </p>
-        <div class="hero-icons">
-          <a href="mailto:huiq@hnu.edu.cn" title="Email">Email</a>
-          <a href="https://scholar.google.com/citations?user=GWW1uj4AAAAJ&hl=zh-CN" target="_blank" rel="noopener" title="Google Scholar">Google Scholar</a>
-          <a href="https://github.com/Kikihqq" target="_blank" rel="noopener" title="GitHub">GitHub</a>
-          <a href="assets/cv.pdf" target="_blank" rel="noopener" title="CV">CV</a>
+        <div class="hero-bio">
+          <p>
+            I will soon be joining <strong>Zhejiang University</strong> as a Ph.D. student.
+            I am deeply passionate about 3D computer vision research — particularly the
+            challenge of precise measurement in 3D generation and modeling. Before this,
+            I earned my Master's degree at Hunan University, advised by Prof.
+            <a href="https://yizhenlao.github.io/" target="_blank" rel="noopener">Yizhen Lao</a>.
+            During my graduate studies, I explored both classical multi-view geometry and
+            learning-based 3D representations in depth, with a particular focus on
+            <strong>neural radiance fields, large-scale 3D reconstruction, and
+            rolling-shutter geometry</strong>.
+          </p>
+          <p>
+            Before entering research, I was a core member of my university's ACM
+            competitive programming team, well-versed in data structures and algorithms —
+            especially graph theory — and won <strong>two bronze medals at the ICPC Asia
+            Regional Contests</strong>.
+          </p>
+        </div>
+        <p class="hero-collab">我正在寻求相关的工业界和学术界科研合作，可以进行六个月以上的深度合作。</p>
+        <div class="hero-interests" id="research">
+          <div class="chip-row">
+            <button type="button" class="chip"
+                    data-title="Neural &amp; 3D Reconstruction"
+                    data-desc="NeRF, 3D Gaussian Splatting, and large-scale scene reconstruction from aerial or in-the-wild imagery.">
+              Neural &amp; 3D Reconstruction
+            </button>
+            <button type="button" class="chip"
+                    data-title="Rolling-Shutter Geometry"
+                    data-desc="Reconstruction and correction under rolling-shutter cameras — bundle adjustment, ego-motion, and learning-based solutions.">
+              Rolling-Shutter Geometry
+            </button>
+            <button type="button" class="chip"
+                    data-title="Computational Photography &amp; CV"
+                    data-desc="Style transfer with diffusion models, video alignment for asynchronous cameras, and aesthetic 3D representations.">
+              Computational Photography &amp; CV
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -58,85 +113,59 @@
 
   <main class="container">
 
-    <!-- ====== ABOUT ====== -->
-    <section id="about" class="section">
-      <h2 class="section-title">About Me</h2>
+    <!-- ====== BLOG ====== -->
+    <section id="blog" class="section">
+      <h2 class="section-title">Blog</h2>
       <div class="section-body">
-        <p>
-          I am a researcher in 3D computer vision, currently a Research 
-          Assistant at 3DXLab, Hunan University (with Prof. 
-          &nbsp;<a href="https://yizhenlao.github.io/" target="_blank" rel="noopener">Yizhen Lao</a>), and a faculty member at Pingxiang University 
-          (2024.7–2026.7). I received my M.Eng. from <strong>Hunan 
-          University</strong> in 2024, where I had the privilege of working in 
-          3DXLab on neural reconstruction and rolling-shutter geometry.
-        </p>
-        <p>
-          My research lies at the intersection of <strong>classical multi-view 
-geometry and modern learned 3D representations</strong>—I am particularly 
-interested in how neural rendering and foundation 3D models can be 
-made robust, geometrically faithful, and useful on real-world data. 
-My past work spans large-scale aerial NeRF reconstruction 
-(Scientific Reports, 2025) and rolling-shutter geometry 
-(TPAMI / CVPR, 2023).
-         
-          <!-- I am especially curious about how large-scale scenes, rolling-shutter geometry, and aesthetic representations can be jointly captured
-          by modern neural and differentiable rendering frameworks. -->
-        </p>
-        <p>
-          I am actively seeking <strong>PhD opportunities for Fall 2026 or Spring 
-2027</strong>, and will be available to join a research group full-time, 
-on-site, starting July 2026.
-        </p>
-      </div>
-    </section>
-
-    <!-- ====== NEWS ====== -->
-    <!-- <section id="news" class="section">
-      <h2 class="section-title">News</h2>
-      <div class="section-body">
-        <ul class="news-list">
-          <li><span class="news-date">2025 · 07</span> Continuing as a research assistant at 3DXLab, Hunan University.</li>
-          <li><span class="news-date">2025 · 10</span> Our paper <em>BirdNeRF</em> is accepted by <strong>Scientific Reports</strong> (Springer Nature).</li>
-          <li><span class="news-date">2024 · 07</span> Joined Pingxiang University as a lecturer (tenured civil-service position).</li>
-          <li><span class="news-date">2024 · 07</span> Received my Master's degree from Hunan University.</li>
-        </ul>
-      </div>
-    </section> -->
-    <!-- ====== BACKGROUND ====== -->
-    <section id="BACKGROUND" class="section">
-      <h2 class="section-title">Background</h2>
-      <div class="section-body">
-      <p>
-        Before transitioning to computer vision research, I trained 
-extensively in competitive programming. I served as captain of the 
-ACM team at Jiangxi Normal University, winning <strong>two ICPC Asia 
-Regional bronze medals (2018, 2019)</strong>. This background gave me a 
-strong foundation in algorithms, graph theory, and combinatorial 
-optimization—which I find increasingly relevant in modern 3D vision 
-problems involving scene graphs, viewgraph decomposition, and 
-correspondence search.
-  </p>
-  </div>
-  </section>
-    
-    <!-- ====== RESEARCH INTERESTS ====== -->
-    <section id="research" class="section">
-      <h2 class="section-title">Research Interests</h2>
-      <div class="section-body">
-        <div class="topics">
-          <article class="topic">
-            <h3>Neural &amp; 3D Reconstruction</h3>
-            <p>NeRF, 3D Gaussian Splatting, and large-scale scene reconstruction from aerial or in-the-wild imagery.</p>
-          </article>
-          <article class="topic">
-            <h3>Rolling-Shutter Geometry</h3>
-            <p>Reconstruction and correction under rolling-shutter cameras — bundle adjustment, ego-motion, and learning-based solutions.</p>
-          </article>
-          <article class="topic">
-            <h3>Computational Photography and Computer Vision</h3>
-            <p>Style transfer with diffusion models, video alignment for asynchronous cameras, and aesthetic 3D representations.</p>
-          </article>
+        <p class="blog-intro">A space for research notes, paper readings, and small ideas.</p>
+        <div class="blog-list">
+          <a class="blog-card" href="blog/post-template.html">
+            <span class="blog-card-img">
+              <svg viewBox="0 0 320 240" role="img" aria-label="Scattered pink and sage ellipses on ink, representing 3D Gaussian splats">
+                <rect width="320" height="240" fill="#17140f"/>
+                <ellipse cx="90" cy="90" rx="46" ry="30" fill="#c98a83" opacity="0.85"/>
+                <ellipse cx="180" cy="130" rx="60" ry="38" fill="#93a06c" opacity="0.85"/>
+                <ellipse cx="230" cy="70" rx="34" ry="22" fill="#f3d9d5" opacity="0.9"/>
+                <ellipse cx="120" cy="170" rx="38" ry="24" fill="#e3e8d1" opacity="0.9"/>
+                <ellipse cx="60" cy="160" rx="24" ry="16" fill="#f2efe9" opacity="0.9"/>
+              </svg>
+            </span>
+            <h3>Reading notes on 3D Gaussian Splatting</h3>
+          </a>
+          <a class="blog-card" href="blog/post-template.html">
+            <span class="blog-card-img">
+              <svg viewBox="0 0 320 240" role="img" aria-label="Split panel of rolling-shutter scan lines transitioning into a neural render">
+                <rect width="160" height="240" fill="#f2efe9"/>
+                <rect x="160" width="160" height="240" fill="#17140f"/>
+                <g stroke="#c98a83" stroke-width="4">
+                  <line x1="20" y1="40" x2="140" y2="40"/>
+                  <line x1="20" y1="70" x2="140" y2="70"/>
+                  <line x1="20" y1="100" x2="140" y2="100"/>
+                  <line x1="20" y1="130" x2="140" y2="130"/>
+                  <line x1="20" y1="160" x2="140" y2="160"/>
+                  <line x1="20" y1="190" x2="140" y2="190"/>
+                </g>
+                <circle cx="240" cy="120" r="60" fill="#93a06c"/>
+                <circle cx="240" cy="120" r="34" fill="#f3d9d5"/>
+              </svg>
+            </span>
+            <h3>From rolling shutter to neural rendering</h3>
+          </a>
+          <a class="blog-card" href="blog/post-template.html">
+            <span class="blog-card-img">
+              <svg viewBox="0 0 320 240" role="img" aria-label="A flat graduation cap icon on a sage background">
+                <rect width="320" height="240" fill="#e3e8d1"/>
+                <polygon points="160,60 260,100 160,140 60,100" fill="#17140f"/>
+                <rect x="150" y="100" width="20" height="70" fill="#17140f"/>
+                <circle cx="160" cy="178" r="8" fill="#c98a83"/>
+              </svg>
+            </span>
+            <h3>Teaching reflections, Year One</h3>
+          </a>
         </div>
+        <p class="blog-more">
+          <a href="blog/index.html">View all posts &rarr;</a>
+        </p>
       </div>
     </section>
 
@@ -144,22 +173,51 @@ correspondence search.
     <section id="publications" class="section">
       <h2 class="section-title">Publications</h2>
       <p class="section-note">
-        * equal contribution &nbsp; · &nbsp; † corresponding author &nbsp; · &nbsp;
-        Selected publications I am a primary author on are <span class="pub-highlight-key">highlighted</span>.
+        * equal contribution &nbsp; · &nbsp; † corresponding author
       </p>
 
       <div class="section-body">
 
         <!-- 1. BirdNeRF (first author) -->
-        <article class="pub pub-highlight">
+        <article class="pub pub-bg-pink">
+          <span class="pub-num">01</span>
           <div class="pub-thumb">
-            <img src="assets/images/pubs/birdnerf.png" width='300' height='200' alt="BirdNeRF teaser"
-                 onerror="this.onerror=null;this.src='assets/images/pubs/birdnerf.png';width='300';height='200';" />
+            <svg viewBox="0 0 320 240" role="img" aria-label="Aerial tiles in green, tan and teal terrain merging into one warm large-scale reconstruction">
+              <defs>
+                <linearGradient id="bnSky" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#8ecbf5"/>
+                  <stop offset="100%" stop-color="#eaf6ff"/>
+                </linearGradient>
+              </defs>
+              <rect width="320" height="240" fill="url(#bnSky)"/>
+              <circle cx="160" cy="30" r="5" fill="#2b241f"/>
+              <path d="M144 30h-14M190 30h14M160 14v12M160 44v-10" stroke="#2b241f" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="130" cy="30" r="4" fill="#ff5a36"/>
+              <circle cx="190" cy="30" r="4" fill="#3fa9f5"/>
+              <path d="M160 38 L128 78 M160 38 L192 78" fill="none" stroke="#e29a00" stroke-width="1.3" stroke-dasharray="3 3"/>
+              <g stroke="#fff" stroke-width="2.5">
+                <rect x="58" y="78" width="70" height="54" rx="4" fill="#8fbf7a"/>
+                <rect x="124" y="78" width="70" height="54" rx="4" fill="#d9b26b"/>
+                <rect x="190" y="78" width="70" height="54" rx="4" fill="#5ec9b8"/>
+              </g>
+              <g fill="#ffffff" opacity="0.55">
+                <rect x="66" y="92" width="10" height="10"/><rect x="82" y="100" width="12" height="8"/>
+                <rect x="134" y="90" width="10" height="10"/><rect x="150" y="104" width="14" height="8"/>
+                <rect x="200" y="94" width="10" height="10"/><rect x="216" y="102" width="12" height="10"/>
+              </g>
+              <rect x="108" y="78" width="20" height="54" fill="#ffc233" opacity="0.55"/>
+              <rect x="174" y="78" width="20" height="54" fill="#ffc233" opacity="0.55"/>
+              <path d="M160 138 V162" stroke="#ff5a36" stroke-width="2.2"/>
+              <polygon points="160,172 150,159 170,159" fill="#ff5a36"/>
+              <rect x="70" y="176" width="180" height="48" rx="8" fill="#ffe4d9"/>
+              <rect x="70" y="176" width="180" height="48" rx="8" fill="none" stroke="#ff5a36" stroke-width="2"/>
+              <text x="160" y="206" text-anchor="middle" font-size="11" font-weight="600" fill="#d9391b" font-family="Inter, sans-serif">merged large-scale scene</text>
+            </svg>
           </div>
           <div class="pub-meta">
             <h3 class="pub-title">BirdNeRF: Fast Neural Reconstruction of Large-Scale Scenes from Aerial Imagery</h3>
             <p class="pub-authors"><strong>Huiqing Zhang</strong>, Yifei Xue, Ming Liao, Yizhen Lao†</p>
-            <p class="pub-venue"><em>Scientific Reports</em> (Springer Nature) <span class="pub-year">2025</span></p>
+            <p class="pub-venue"><em>Scientific Reports</em>&nbsp;<span class="pub-year">2025</span></p>
             <p class="pub-links">[
               <a href="https://www.nature.com/articles/s41598-025-21206-z" target="_blank" rel="noopener">Paper</a> |
               <a href="https://www.nature.com/articles/s41598-025-21206-z.pdf" target="_blank" rel="noopener">PDF</a> |
@@ -169,15 +227,43 @@ correspondence search.
         </article>
 
         <!-- 2. Fast RSC in the Wild (T-PAMI 2023) -->
-        <article class="pub">
+        <article class="pub pub-bg-sage">
+          <span class="pub-num">02</span>
           <div class="pub-thumb">
-            <img src="assets/images/pubs/Wild.png" alt="Fast Rolling Shutter Correction in the Wild"
-                 onerror="this.onerror=null;this.src='assets/images/pubs/Wild.png';" />
+            <svg viewBox="0 0 320 240" role="img" aria-label="A skewed, rainbow-tinted rolling-shutter image being corrected into an aligned rectangle">
+              <defs>
+                <linearGradient id="rsScan" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3fa9f5"/>
+                  <stop offset="50%" stop-color="#a06cd5"/>
+                  <stop offset="100%" stop-color="#ff5a36"/>
+                </linearGradient>
+                <clipPath id="rsClip">
+                  <polygon points="40,66 150,54 168,172 58,184"/>
+                </clipPath>
+              </defs>
+              <rect width="320" height="240" fill="#fff6f2"/>
+              <g clip-path="url(#rsClip)">
+                <rect x="20" y="40" width="170" height="90" fill="#cfe8fb"/>
+                <rect x="20" y="130" width="170" height="70" fill="#8a715a"/>
+                <rect x="20" y="60" width="170" height="140" fill="url(#rsScan)" opacity="0.5"/>
+              </g>
+              <polygon points="40,66 150,54 168,172 58,184" fill="none" stroke="#2b241f" stroke-width="1.6"/>
+              <text x="105" y="200" text-anchor="middle" font-size="10" fill="#6b5f57" font-family="Inter, sans-serif">rolling-shutter input</text>
+              <path d="M186 120 H226" stroke="#ff5a36" stroke-width="2.2"/>
+              <polygon points="238,120 224,112 224,128" fill="#ff5a36"/>
+              <g>
+                <rect x="250" y="60" width="58" height="112" fill="#cfe8fb"/>
+                <rect x="250" y="150" width="58" height="22" fill="#8a715a"/>
+                <rect x="250" y="60" width="58" height="112" fill="url(#rsScan)" opacity="0.18"/>
+                <rect x="250" y="60" width="58" height="112" fill="none" stroke="#2b241f" stroke-width="1.6" rx="3"/>
+              </g>
+              <text x="279" y="190" text-anchor="middle" font-size="10" font-weight="600" fill="#2b241f" font-family="Inter, sans-serif">corrected</text>
+            </svg>
           </div>
           <div class="pub-meta">
             <h3 class="pub-title">Fast Rolling Shutter Correction in the Wild</h3>
             <p class="pub-authors">Delin Qu*, Bangyan Liao*, <strong>Huiqing Zhang</strong>, Omar Ait-Aider, Yizhen Lao†</p>
-            <p class="pub-venue"><em>IEEE Transactions on Pattern Analysis and Machine Intelligence</em> (<strong>T-PAMI</strong>) <span class="pub-year">2023</span></p>
+            <p class="pub-venue"><em>IEEE Transactions on Pattern Analysis and Machine Intelligence</em> (<strong>T-PAMI</strong>)&nbsp;<span class="pub-year">2023</span></p>
             <p class="pub-links">[
               <a href="https://ieeexplore.ieee.org/document/10148802" target="_blank" rel="noopener">Paper</a> |
               <a href="https://hal.science/hal-04280534/document" target="_blank" rel="noopener">PDF</a> |
@@ -189,15 +275,43 @@ correspondence search.
         </article>
 
         <!-- 3. Revisiting RSBA (CVPR 2023) -->
-        <article class="pub">
+        <article class="pub pub-bg-sand">
+          <span class="pub-num">03</span>
           <div class="pub-thumb">
-            <img src="assets/images/pubs/BA.png" alt="Revisiting Rolling Shutter Bundle Adjustment"
-                 onerror="this.onerror=null;this.src='assets/images/pubs/BA.png';" />
+            <svg viewBox="0 0 320 240" role="img" aria-label="A noisy grey trajectory refined into an accurate teal-to-flame trajectory, alongside a rainbow-colored 3D point cloud">
+              <defs>
+                <linearGradient id="baPath" x1="0" y1="1" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#3fa9f5"/>
+                  <stop offset="100%" stop-color="#ff5a36"/>
+                </linearGradient>
+              </defs>
+              <rect width="320" height="240" fill="#fff6f2"/>
+              <g opacity="0.35">
+                <rect x="30" y="204" width="18" height="14" fill="#d9b26b"/><rect x="48" y="204" width="18" height="14" fill="#fff"/>
+                <rect x="66" y="204" width="18" height="14" fill="#d9b26b"/><rect x="84" y="204" width="18" height="14" fill="#fff"/>
+                <rect x="102" y="204" width="18" height="14" fill="#d9b26b"/><rect x="120" y="204" width="18" height="14" fill="#fff"/>
+              </g>
+              <path d="M50 190 Q100 120 150 150 T260 90" fill="none" stroke="#c9beb4" stroke-width="1.6" stroke-dasharray="4 3"/>
+              <path d="M50 190 Q110 140 160 130 T260 70" fill="none" stroke="url(#baPath)" stroke-width="2.6"/>
+              <g fill="#2b241f" stroke="#2b241f" stroke-width="1" stroke-linejoin="round">
+                <path d="M50 190 l-8 11 h16 z"/>
+                <path d="M160 130 l-8 11 h16 z"/>
+                <path d="M260 70 l-8 11 h16 z"/>
+              </g>
+              <g>
+                <circle cx="200" cy="180" r="2.8" fill="#ff5a36"/><circle cx="210" cy="170" r="2.8" fill="#ffc233"/>
+                <circle cx="195" cy="163" r="2.8" fill="#3fa9f5"/><circle cx="215" cy="190" r="2.8" fill="#5ec98d"/>
+                <circle cx="205" cy="200" r="2.8" fill="#a06cd5"/><circle cx="222" cy="175" r="2.8" fill="#ff5a36"/>
+                <circle cx="188" cy="184" r="2.8" fill="#ffc233"/><circle cx="230" cy="188" r="2.8" fill="#3fa9f5"/>
+                <circle cx="238" cy="165" r="2.8" fill="#5ec98d"/><circle cx="180" cy="172" r="2.8" fill="#a06cd5"/>
+              </g>
+              <text x="160" y="222" text-anchor="middle" font-size="10" fill="#6b5f57" font-family="Inter, sans-serif">rolling-shutter bundle adjustment</text>
+            </svg>
           </div>
           <div class="pub-meta">
             <h3 class="pub-title">Revisiting Rolling Shutter Bundle Adjustment: Toward Accurate and Fast Solution</h3>
             <p class="pub-authors">Bangyan Liao*, Delin Qu*, Yifei Xue, <strong>Huiqing Zhang</strong>, Yizhen Lao†</p>
-            <p class="pub-venue"><em>IEEE/CVF Conference on Computer Vision and Pattern Recognition</em> (<strong>CVPR</strong>) <span class="pub-year">2023</span></p>
+            <p class="pub-venue"><em>IEEE/CVF Conference on Computer Vision and Pattern Recognition</em> (<strong>CVPR</strong>)&nbsp;<span class="pub-year">2023</span></p>
             <p class="pub-links">[
               <a href="https://openaccess.thecvf.com/content/CVPR2023/papers/Liao_Revisiting_Rolling_Shutter_Bundle_Adjustment_Toward_Accurate_and_Fast_Solution_CVPR_2023_paper.pdf" target="_blank" rel="noopener">Paper</a> |
               <a href="https://arxiv.org/pdf/2209.08503" target="_blank" rel="noopener">arXiv</a> |
@@ -209,16 +323,36 @@ correspondence search.
           </div>
         </article>
 
-        <!-- 4. DFR (ICME 2023) — newly added from advisor's page -->
-        <article class="pub">
+        <!-- 4. DFR (ICME 2023) -->
+        <article class="pub pub-bg-pink">
+          <span class="pub-num">04</span>
           <div class="pub-thumb">
-            <img src="assets/images/pubs/dfr.png" alt="DFR: Depth from Rotation"
-                 onerror="this.onerror=null;this.src='assets/images/pubs/dfr.png';" />
+            <svg viewBox="0 0 320 240" role="img" aria-label="Two uncalibrated interior views related by a rotation, rectified into a jet-colormap depth map">
+              <defs>
+                <linearGradient id="dfrDepthGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#2b3a67"/>
+                  <stop offset="28%" stop-color="#3fa9f5"/>
+                  <stop offset="54%" stop-color="#5ec98d"/>
+                  <stop offset="78%" stop-color="#ffc233"/>
+                  <stop offset="100%" stop-color="#ff5a36"/>
+                </linearGradient>
+              </defs>
+              <rect width="320" height="240" fill="#fff6f2"/>
+              <rect x="42" y="56" width="86" height="64" rx="5" fill="#f0dfc4" stroke="#2b241f" stroke-width="1.4"/>
+              <rect x="192" y="56" width="86" height="64" rx="5" fill="#cfe8fb" stroke="#2b241f" stroke-width="1.4"/>
+              <circle cx="76" cy="98" r="8" fill="#ff5a36" opacity="0.75"/>
+              <circle cx="236" cy="98" r="8" fill="#3fa9f5" opacity="0.75"/>
+              <path d="M132 88 A32 32 0 0 1 188 88" fill="none" stroke="#e29a00" stroke-width="2.2"/>
+              <polygon points="188,88 175,80 178,95" fill="#e29a00"/>
+              <text x="160" y="72" text-anchor="middle" font-size="10" font-weight="600" fill="#e29a00" font-family="Inter, sans-serif">rotation</text>
+              <rect x="76" y="148" width="168" height="36" rx="5" fill="url(#dfrDepthGrad)"/>
+              <text x="160" y="202" text-anchor="middle" font-size="10" fill="#6b5f57" font-family="Inter, sans-serif">depth from uncalibrated rectification</text>
+            </svg>
           </div>
           <div class="pub-meta">
             <h3 class="pub-title">DFR: Depth from Rotation by Uncalibrated Image Rectification with Latitudinal Motion Assumption</h3>
             <p class="pub-authors">Yongcong Zhang, Yifei Xue*, Ming Liao, <strong>Huiqing Zhang</strong>, Yizhen Lao†</p>
-            <p class="pub-venue"><em>IEEE International Conference on Multimedia and Expo</em> (<strong>ICME</strong>) <span class="pub-year">2023</span></p>
+            <p class="pub-venue"><em>IEEE International Conference on Multimedia and Expo</em> (<strong>ICME</strong>)&nbsp;<span class="pub-year">2023</span></p>
             <p class="pub-links">[
               <a href="https://arxiv.org/pdf/2307.05129.pdf" target="_blank" rel="noopener">Paper</a> |
               <a href="https://arxiv.org/abs/2307.05129" target="_blank" rel="noopener">arXiv</a>
@@ -227,15 +361,49 @@ correspondence search.
         </article>
 
         <!-- 5. FEC (Drones 2022) -->
-        <article class="pub">
+        <article class="pub pub-bg-sage">
+          <span class="pub-num">05</span>
           <div class="pub-thumb">
-            <img src="assets/images/pubs/fec.png" alt="FEC clustering"
-                 onerror="this.onerror=null;this.src='assets/images/pubs/fec.png';" />
+            <svg viewBox="0 0 320 240" role="img" aria-label="A grey unorganized point cloud segmented into five distinct vivid color clusters">
+              <rect width="320" height="240" fill="#fff6f2"/>
+              <g fill="#9c8f86">
+                <circle cx="55" cy="78" r="2"/><circle cx="68" cy="90" r="2"/><circle cx="48" cy="100" r="2"/>
+                <circle cx="72" cy="70" r="2"/><circle cx="60" cy="112" r="2"/><circle cx="80" cy="105" r="2"/>
+                <circle cx="45" cy="120" r="2"/><circle cx="90" cy="88" r="2"/><circle cx="65" cy="130" r="2"/>
+                <circle cx="100" cy="115" r="2"/><circle cx="52" cy="140" r="2"/><circle cx="85" cy="145" r="2"/>
+                <circle cx="105" cy="135" r="2"/><circle cx="70" cy="155" r="2"/><circle cx="40" cy="80" r="2"/>
+                <circle cx="95" cy="145" r="2"/><circle cx="35" cy="105" r="2"/><circle cx="110" cy="98" r="2"/>
+              </g>
+              <text x="72" y="200" text-anchor="middle" font-size="10" fill="#6b5f57" font-family="Inter, sans-serif">unorganized point cloud</text>
+              <path d="M140 128 H182" stroke="#ff5a36" stroke-width="2.2"/>
+              <polygon points="194,128 180,120 180,136" fill="#ff5a36"/>
+              <g fill="#ff5a36">
+                <circle cx="220" cy="62" r="2.6"/><circle cx="228" cy="70" r="2.6"/>
+                <circle cx="214" cy="74" r="2.6"/><circle cx="225" cy="82" r="2.6"/><circle cx="234" cy="60" r="2.6"/>
+              </g>
+              <g fill="#3fa9f5">
+                <circle cx="266" cy="72" r="2.6"/><circle cx="274" cy="80" r="2.6"/>
+                <circle cx="260" cy="84" r="2.6"/><circle cx="270" cy="92" r="2.6"/>
+              </g>
+              <g fill="#5ec98d">
+                <circle cx="240" cy="110" r="2.6"/><circle cx="248" cy="118" r="2.6"/>
+                <circle cx="234" cy="122" r="2.6"/><circle cx="244" cy="130" r="2.6"/><circle cx="252" cy="104" r="2.6"/>
+              </g>
+              <g fill="#a06cd5">
+                <circle cx="222" cy="150" r="2.6"/><circle cx="230" cy="158" r="2.6"/>
+                <circle cx="216" cy="162" r="2.6"/><circle cx="226" cy="170" r="2.6"/>
+              </g>
+              <g fill="#ffc233">
+                <circle cx="262" cy="150" r="2.6"/><circle cx="270" cy="158" r="2.6"/>
+                <circle cx="256" cy="162" r="2.6"/><circle cx="266" cy="170" r="2.6"/><circle cx="274" cy="142" r="2.6"/>
+              </g>
+              <text x="252" y="200" text-anchor="middle" font-size="10" font-weight="600" fill="#2b241f" font-family="Inter, sans-serif">clustered segments</text>
+            </svg>
           </div>
           <div class="pub-meta">
             <h3 class="pub-title">FEC: Fast Euclidean Clustering for Point Cloud Segmentation</h3>
             <p class="pub-authors">Yu Cao, Yancheng Wang*, Yifei Xue, <strong>Huiqing Zhang</strong>, Yizhen Lao†</p>
-            <p class="pub-venue"><em>Drones</em> (MDPI) <span class="pub-year">2022</span></p>
+            <p class="pub-venue"><em>Drones</em> (MDPI)&nbsp;<span class="pub-year">2022</span></p>
             <p class="pub-links">[
               <a href="https://www.mdpi.com/2504-446X/6/11/325" target="_blank" rel="noopener">Paper</a> |
               <a href="https://www.mdpi.com/2504-446X/6/11/325/pdf?version=1666876162" target="_blank" rel="noopener">PDF</a> |
@@ -247,126 +415,33 @@ correspondence search.
       </div>
     </section>
 
-    <!-- ====== EXPERIENCE ====== -->
-    <section id="experience" class="section">
-      <h2 class="section-title">Experience</h2>
-      <div class="section-body">
-        <div class="timeline">
-
-          <div class="timeline-item">
-            <div class="timeline-date">2025.7 — Now</div>
-            <div class="timeline-content">
-              <h3>Hunan University · 3DXLab</h3>
-              <p class="timeline-role">Research Assistant</p>
-              <ul>
-                <li>Continuing research on 3D vision, including aesthetic visible watermarking on 3D models and a 3D rock-painting system.</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="timeline-item">
-            <div class="timeline-date">2024.7 — 2026.7</div>
-            <div class="timeline-content">
-              <h3>Pingxiang University</h3>
-              <p class="timeline-role">Lecturer · School of Information and Computer Engineering</p>
-              <ul>
-                <li>Teaching <em>Digital Literacy &amp; Intelligent Applications</em> and <em>Python Data Analysis</em>.</li>
-                <li>Founded the university's programming-contest team and serve as head coach.</li>
-                <li>Co-investigator on the Jiangxi 14th-Five-Year-Plan project on VR-driven education.</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="timeline-item">
-            <div class="timeline-date">2023.11 — 2024.2</div>
-            <div class="timeline-content">
-              <h3>Xiaomi Inc. · AI Lab</h3>
-              <p class="timeline-role">Computer Vision Engineer Intern (SP Offer)</p>
-              <ul>
-                <li>Realistic anime style transfer with diffusion models under aesthetic constraints.</li>
-                <li>Data pipeline and perception algorithm design for Xiaomi EV's driver-monitoring system.</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="timeline-item">
-            <div class="timeline-date">2022.7 - 2022.10</div>
-            <div class="timeline-content">
-              <h3>MGTV · Intelligent Algorithm Department</h3>
-              <p class="timeline-role">Computer Vision Engineer Intern (SP Offer)</p>
-              <ul>
-                <li>Automated post-production mosaic system: object detection, tracking strategy, and SAM fine-tuning.</li>
-              </ul>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- ====== EDUCATION ====== -->
-    <section id="education" class="section">
-      <h2 class="section-title">Education</h2>
-      <div class="section-body">
-        <div class="edu">
-          <div class="edu-row">
-            <div class="edu-school">Hunan University</div>
-            <div class="edu-detail">M.Eng. in Computer Technology · 2021 – 2024 · GPA 3.3/4 (Top 10%)</div>
-            <div class="edu-note">Advised by Prof. Yizhen Lao, 3DXLab. Two-time First-Class Graduate Scholarship.</div>
-          </div>
-          <div class="edu-row">
-            <div class="edu-school">Jiangxi Normal University</div>
-            <div class="edu-detail">B.Eng. in Computer Science &amp; Technology · 2017 – 2021 · GPA 3.5/4 (Top 5%)</div>
-            <div class="edu-note">Outstanding Graduate · Recommended for postgraduate admission · ACM team captain (2× ICPC Asia Regional Bronze).</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ====== AWARDS ====== -->
-    <section id="awards" class="section">
-      <h2 class="section-title">Selected Awards</h2>
-      <div class="section-body">
-        <ul class="awards">
-          <li><span class="award-year">2022</span> 3rd "Malanshan Cup" Int'l A/V Algorithm Contest — Excellence Award (4/301)</li>
-          <li><span class="award-year">2019</span> 44th ICPC Asia Regional Contest (Yinchuan) — Bronze Medal</li>
-          <li><span class="award-year">2018</span> 43rd ICPC Asia Regional Contest (Xuzhou) — Bronze Medal</li>
-          <li><span class="award-year">2021–2022</span> First-class Master’s Scholarship (2 consecutive years)</li>
-          <li><span class="award-year">2018–2020</span> First-Class Comprehensive Scholarship (3 consecutive years)</li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- ====== BLOG ====== -->
-    <section id="blog" class="section">
-      <h2 class="section-title">Notes &amp; Blog</h2>
-      <div class="section-body">
-        <p class="blog-intro">A space for research notes, paper readings, and small ideas. <em>Coming soon — placeholders below.</em></p>
-        <div class="blog-list">
-          <a class="blog-card" href="blog/post-template.html">
-            <span class="blog-date">2025 · 09</span>
-            <h3>Reading notes on 3D Gaussian Splatting</h3>
-            <p>A short tour of the original 3DGS paper and where I think it could go next.</p>
-          </a>
-          <a class="blog-card" href="blog/post-template.html">
-            <span class="blog-date">2025 · 08</span>
-            <h3>From rolling shutter to neural rendering</h3>
-            <p>Connecting two threads of my research and the questions that bridge them.</p>
-          </a>
-          <a class="blog-card" href="blog/post-template.html">
-            <span class="blog-date">2025 · 07</span>
-            <h3>Teaching reflections, Year One</h3>
-            <p>Lessons from running my first contest team and what I'd do differently.</p>
-          </a>
-        </div>
-      </div>
-    </section>
-
   </main>
 
   <footer class="footer">
     <p>© <span id="year"></span> Huiqing Zhang. Built with care · Hosted on GitHub Pages.</p>
   </footer>
+
+  <!-- ====== PHOTO GALLERY LIGHTBOX ====== -->
+  <div class="lightbox" id="lightbox" hidden>
+    <div class="lightbox-backdrop" data-close></div>
+    <div class="lightbox-panel">
+      <button type="button" class="lightbox-close" data-close aria-label="Close gallery">&times;</button>
+      <button type="button" class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Previous photo">&#8249;</button>
+      <img class="lightbox-img" id="lightboxImg" src="" alt="Huiqing Zhang" />
+      <button type="button" class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Next photo">&#8250;</button>
+      <div class="lightbox-dots" id="lightboxDots"></div>
+    </div>
+  </div>
+
+  <!-- ====== RESEARCH INTEREST DETAIL MODAL ====== -->
+  <div class="modal" id="interestModal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel">
+      <button type="button" class="modal-close" data-close aria-label="Close">&times;</button>
+      <h3 class="modal-title" id="interestModalTitle"></h3>
+      <p class="modal-body" id="interestModalBody"></p>
+    </div>
+  </div>
 
   <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
   <script src="assets/js/main.js"></script>

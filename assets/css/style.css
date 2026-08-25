@@ -795,8 +795,8 @@ strong { color: var(--ink); font-weight: 600; }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  aspect-ratio: 1 / 1;
-  padding: 22px;
+  min-height: 205px;
+  padding: 22px 20px;
   background: var(--surface);
   border: 1.5px solid var(--ink);
   transition: transform .25s ease, box-shadow .25s ease;
@@ -818,8 +818,8 @@ strong { color: var(--ink); font-weight: 600; }
   margin-bottom: 6px;
 }
 .blog-card h3 {
-  font-family: var(--sans);
-  font-size: 1rem;
+  font-family: "Times New Roman", "Songti SC", "STSong", serif;
+  font-size: 0.94rem;
   font-weight: 700;
   margin: 0;
   padding: 0;
@@ -828,9 +828,11 @@ strong { color: var(--ink); font-weight: 600; }
 }
 .blog-card p {
   margin: 20px 0 0;
-  font-size: 0.9rem;
+  font-family: "Times New Roman", "Songti SC", "STSong", serif;
+  font-size: 0.98rem;
+  font-weight: 500;
   color: var(--ink-soft);
-  line-height: 1.55;
+  line-height: 1.68;
 }
 .blog-more {
   margin: 20px 0 0;
@@ -882,7 +884,7 @@ strong { color: var(--ink); font-weight: 600; }
   .section-title { font-size: 1.5rem; }
 
   .blog-list { grid-template-columns: 1fr; }
-  .blog-card { aspect-ratio: auto; min-height: 180px; }
+  .blog-card { min-height: 165px; }
 
   .pub {
     grid-template-columns: 1fr;

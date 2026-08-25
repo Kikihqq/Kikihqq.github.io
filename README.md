@@ -132,6 +132,9 @@ Single breakpoint at 760px — the hero stacks, the timeline collapses, publicat
 - 配色：`assets/css/style.css` 顶部的 `:root` 变量
 - 部署：仓库命名为 `Kikihqq.github.io` → push → Settings 里开 Pages → 访问 `https://kikihqq.github.io/`
 
+- 以后修改 Markdown 后，在 blog 目录运行：
+./build-blog.sh
+即可用统一主题重新生成文章页面。
 ---
 
 ## License

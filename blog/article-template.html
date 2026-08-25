@@ -28,7 +28,7 @@
   <main class="article-shell">
     <a href="index.html" class="back-link">← 返回全部文章</a>
     <header class="article-header">
-      <p class="article-kicker">LECTURE NOTES · 03</p>
+      <p class="article-kicker">$if(category)$$category$$else$RESEARCH NOTES$endif$</p>
       <h1>$title$</h1>
       <time class="article-date" datetime="$date-iso$">$date$</time>
       <p class="article-deck">$description$</p>
@@ -48,9 +48,17 @@
       <p class="gallery-help">滑动浏览 · 点击图片放大</p>
     </section>
 
-    <article class="article-content">
+    <div class="article-layout">
+      <aside class="article-sidebar" aria-label="文章目录">
+        <p class="article-sidebar-label">CONTENTS</p>
+        $if(toc)$
+        $table-of-contents$
+        $endif$
+      </aside>
+      <article class="article-content">
 $body$
-    </article>
+      </article>
+    </div>
   </main>
 
   <div class="article-lightbox" id="articleLightbox" hidden role="dialog" aria-modal="true" aria-label="图片预览">

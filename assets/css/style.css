@@ -792,7 +792,11 @@ strong { color: var(--ink); font-weight: 600; }
   gap: 16px;
 }
 .blog-card {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  aspect-ratio: 1 / 1;
+  padding: 22px;
   background: var(--surface);
   border: 1.5px solid var(--ink);
   transition: transform .25s ease, box-shadow .25s ease;
@@ -803,16 +807,9 @@ strong { color: var(--ink); font-weight: 600; }
   box-shadow: var(--shadow-lg);
   color: inherit;
 }
-.blog-card-img {
-  aspect-ratio: 4 / 3;
-  border-bottom: 1.5px solid var(--ink);
-  overflow: hidden;
-}
-.blog-card-img svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
+.blog-card-pink { background: var(--lotus-soft); }
+.blog-card-sand { background: var(--sand-soft); }
+.blog-card-sage { background: var(--mist-soft); }
 .blog-date {
   display: block;
   font-family: var(--serif);
@@ -825,24 +822,16 @@ strong { color: var(--ink); font-weight: 600; }
   font-size: 1rem;
   font-weight: 700;
   margin: 0;
-  padding: 16px;
+  padding: 0;
   color: var(--ink);
   line-height: 1.35;
 }
 .blog-card p {
-  margin: 0;
+  margin: 20px 0 0;
   font-size: 0.9rem;
   color: var(--ink-soft);
   line-height: 1.55;
 }
-.blog-card-featured { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(220px, 34%) 1fr; }
-.blog-card-featured .blog-card-img { aspect-ratio: auto; border-bottom: 0; border-right: 1.5px solid var(--ink); }
-.blog-card-featured .blog-card-img img { width: 100%; height: 100%; min-height: 260px; object-fit: cover; object-position: top; }
-.blog-card-body { display: flex; flex-direction: column; padding: 26px; min-width: 0; }
-.blog-card-body .blog-date { order: -1; margin-bottom: 10px; font-family: var(--sans); font-size: .76rem; letter-spacing: .08em; }
-.blog-card-body h3 { padding: 0; font-family: var(--serif); font-size: 1.65rem; }
-.blog-card-body p { margin-top: 12px; }
-.blog-read-more { margin-top: auto; padding-top: 22px; align-self: flex-end; color: var(--lotus-deep); font-size: .86rem; font-weight: 600; }
 .blog-more {
   margin: 20px 0 0;
   font-size: 0.92rem;
@@ -893,9 +882,7 @@ strong { color: var(--ink); font-weight: 600; }
   .section-title { font-size: 1.5rem; }
 
   .blog-list { grid-template-columns: 1fr; }
-  .blog-card-featured { grid-template-columns: 1fr; }
-  .blog-card-featured .blog-card-img { border-right: 0; border-bottom: 1.5px solid var(--ink); }
-  .blog-card-featured .blog-card-img img { min-height: 0; aspect-ratio: 16 / 9; }
+  .blog-card { aspect-ratio: auto; min-height: 180px; }
 
   .pub {
     grid-template-columns: 1fr;

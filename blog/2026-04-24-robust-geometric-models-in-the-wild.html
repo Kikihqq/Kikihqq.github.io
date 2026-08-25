@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="从视觉歧义、长尾分布与物理尺度塌缩出发，复盘野外三维重建的研究路径，并讨论数据工程如何成为模型设计的一部分。" />
+  <title>野外环境下的鲁棒三维重建 — Huiqing Zhang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="article.css" />
+  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html#top" class="nav-brand">Huiqing&nbsp;Zhang</a>
+      <ul class="nav-links">
+        <li><a href="../index.html#about">About</a></li>
+        <li><a href="../index.html#publications">Publications</a></li>
+        <li><a href="../cv.html">CV</a></li>
+        <li><a href="index.html" class="active">Blog</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="article-shell">
+    <a href="index.html" class="back-link">← 返回全部文章</a>
+    <header class="article-header">
+      <p class="article-kicker">LECTURE NOTES · 03</p>
+      <h1>野外环境下的鲁棒三维重建</h1>
+      <time class="article-date" datetime="2026-04-24">2026 · 04 · 24</time>
+      <p class="article-deck">从视觉歧义、长尾分布与物理尺度塌缩出发，复盘野外三维重建的研究路径，并讨论数据工程如何成为模型设计的一部分。</p>
+    </header>
+
+    <section class="article-gallery" aria-label="演讲笔记图集">
+      <div class="gallery-strip" id="articleGallery">
+        <button class="gallery-slide" type="button" data-index="0"><img src="../assets/images/blog/robust-geometry/01-cover.png" alt="演讲笔记封面" /></button>
+        <button class="gallery-slide" type="button" data-index="1"><img src="../assets/images/blog/robust-geometry/02-problem-framing.png" alt="问题立论" /></button>
+        <button class="gallery-slide" type="button" data-index="2"><img src="../assets/images/blog/robust-geometry/03-paradigm-comparison.png" alt="重建范式比较" /></button>
+        <button class="gallery-slide" type="button" data-index="3"><img src="../assets/images/blog/robust-geometry/04-visual-ambiguity.png" alt="视觉歧义" /></button>
+        <button class="gallery-slide" type="button" data-index="4"><img src="../assets/images/blog/robust-geometry/05-long-tail.png" alt="长尾分布" /></button>
+        <button class="gallery-slide" type="button" data-index="5"><img src="../assets/images/blog/robust-geometry/06-long-tail-simulation.png" alt="长尾模拟" /></button>
+        <button class="gallery-slide" type="button" data-index="6"><img src="../assets/images/blog/robust-geometry/07-metric-scale.png" alt="物理尺度恢复" /></button>
+        <button class="gallery-slide" type="button" data-index="7"><img src="../assets/images/blog/robust-geometry/08-reflection.png" alt="方法论反思" /></button>
+      </div>
+      <p class="gallery-help">滑动浏览 · 点击图片放大</p>
+    </section>
+
+    <article class="article-content">
+<blockquote>
+<p>整理自相里元博 (Yuanbo Xiangli) 的学术演讲《Towards Robust Geometric Models in the Wild》。本文以研究复盘的视角，详细记录其问题立论、技术方案与方法论反思。</p>
+</blockquote>
+<hr />
+<h2 id="摘要">摘要</h2>
+<p>野外（in-the-wild）三维重建是当前几何视觉中一个被反复触及但远未解决的问题。讲者从当前 data-driven 几何模型在真实场景下的三类典型失败模式出发——视觉歧义（Doppelgänger）、长尾分布、物理尺度塌缩——依次介绍了三个研究工作：DG++（修复 SfM 中的视觉相似性歧义）、MegaDepth-X（基于子图采样模拟长尾分布的训练数据）、WildMoGe（通过地理元数据与双目基线恢复野外场景的真实物理尺度）。这三个工作的共同立场是：当前的失败大多并非源于模型容量不足，而是源于训练数据分布对模型上限的隐性约束。换言之——<strong>对数据的理解，本身应当被视作模型设计的一部分</strong>。</p>
+<p><strong>关键词</strong>：Geometric Model · SfM/MVS · View Graph · Long-tail · Metric Scale · Doppelgänger</p>
+<hr />
+<h2 id="一问题立论为什么野外重建值得重新审视">一、问题立论：为什么"野外重建"值得重新审视</h2>
+<h3 id="11-当前训练范式的隐含假设">1.1 当前训练范式的隐含假设</h3>
+<p>主流的几何模型训练范式高度依赖三类数据集——Outdoor、Indoor、Objects。这些数据集在采集阶段经历了较强的人工筛选与控制：场景边界明确、视角分布相对均衡、噪声较低。在这样的数据上训练得到的几何模型，在 small-scale 的受控场景下，单次优化即可给出令人满意的结果。</p>
+<p>但讲者抛出了一个看似简单实则极具挑战性的问题：</p>
+<blockquote>
+<p>这三类数据集组合起来，是否真的能 capture and depict 我们所处的世界？</p>
+</blockquote>
+<p>这一问题不是修辞，而是贯穿整场演讲的方法论入口。它实际上质疑了当前 3D 视觉社区一个长期未被言明的假设——<strong>训练数据的分布与目标应用场景的分布是充分匹配的</strong>。</p>
+<h3 id="12-野外场景的两种形态">1.2 野外场景的两种形态</h3>
+<p>讲者通过具体例子展示了野外场景的多样性，并将其大致划分为两类：</p>
+<p><strong>Dense Viewpoints（密集视角场景）</strong>：以柏林大教堂等知名地标为例，互联网上能搜索到海量从不同角度、不同光线、不同时段拍摄的图像（白天、夜晚、日落、各立面、远景、近景等）。这类场景的图像数量充足，理论上应当对重建友好。</p>
+<p><strong>Sparse Viewpoints（稀疏视角场景）</strong>：不那么知名的地标建筑，留下的影像构成相对混乱——既有外部拍摄、室内视角，也有物品特写、甚至事件记录。视角覆盖不均，且图像内容常掺杂非目标内容。</p>
+<p>这两类形态在野外都广泛存在，但<strong>当前模型的训练分布更接近第一类</strong>，因而在第二类上系统性地失败。</p>
+<h3 id="13-三类典型失败模式">1.3 三类典型失败模式</h3>
+<p>讲者通过三个具体例子展示了现有模型的失败方式：</p>
+<p><strong>i. 视觉歧义导致的结构性错误（Doppelgänger ambiguity）</strong> 对称建筑的东西立面由于主体相似度极高，被 SfM 系统误认为同一表面。最具代表性的例子是亚历山大·涅夫斯基大教堂——COLMAP 重建结果中出现了多余的"鬼影钟塔"。</p>
+<p><strong>ii. 大场景下的预测不自信（Uncertain camera pose prediction）</strong> 对于面积较大、视角多样、含 noise 输入的广场场景，前馈式 geometric model（如 Pi3）无法 confidently 给出 geometric camera 估计——重建结果稀疏，相机姿态高度不确定，整个场景的几何信息几乎丢失。</p>
+<p><strong>iii. 物理尺度严重塌缩（Metric scale collapse）</strong> 单目 metric 模型如 MoGe-2 在凯旋门的游客照上，能合理预测人物高度（≈1.4m），但同一图像中的背景建筑尺度严重偏离真实值——凯旋门真实宽度 44.82m，而模型预测仅为 18.8m，误差超过一倍。这暗示模型学到的"metric"知识高度局限于训练时见过的场景类型。</p>
+<p>讲者特别强调：<strong>这些不是 corner case，而是非常常见的例子</strong>。换言之，野外场景下的失败是常态而非异常。</p>
+<hr />
+<h2 id="二范式比较传统方法-vs-学习方法">二、范式比较：传统方法 vs. 学习方法</h2>
+<h3 id="21-一个反直觉的观察">2.1 一个反直觉的观察</h3>
+<p>面对这些失败案例，一个反直觉的观察是：<strong>传统的 pairwise correspondence + SfM 流水线，在 in-the-wild 场景上反而比 data-driven 模型更鲁棒</strong>。</p>
+<p>传统范式的三阶段流水线是：</p>
+<pre><code>[局部特征匹配]  →  [View Graph + SfM]  →  [Dense MVS]
+SIFT/SuperPoint   COLMAP/BA              PatchMatch
+SuperGlue/LoFTR   Multi-view Geometry    Depth Fusion
+                  Photo Tourism</code></pre>
+<p>第一阶段建立局部对应关系，第二阶段在 view graph 上联合优化相机参数与稀疏三维结构，第三阶段在已知相机的情况下做稠密深度估计。</p>
+<h3 id="22-鲁棒性的来源显式建模-vs-隐式-priors">2.2 鲁棒性的来源：显式建模 vs. 隐式 priors</h3>
+<p>传统方法的鲁棒性源于其对局部对应关系的<strong>显式建模</strong>——只要能找到足够多的可靠特征点，几何约束本身就足以排除大部分歧义。即使某些匹配是错误的，RANSAC 等鲁棒估计方法也能在统计意义上恢复正确的几何。</p>
+<p>而前馈式 data-driven 模型则将这一过程隐式化，依赖训练数据中的 priors 来"猜测"几何结构。当输入分布与训练分布不匹配时（即所谓的 distribution shift），priors 反而成为偏差源，导致系统性失败。</p>
+<h3 id="23-演讲者的方法论立场">2.3 演讲者的方法论立场</h3>
+<p>讲者在演讲中暗示的方法论立场是：data-driven 模型不是要<em>取代</em>传统流水线，而应当将传统方法视作<strong>数据生成器</strong>与<strong>结构正则项</strong>。三个 side work 都建立在这一立场之上：</p>
+<ul>
+<li>DG++ 修复传统流水线的弱点（Doppelgänger 错误），让传统方法的输出变得更可靠；</li>
+<li>MegaDepth-X 基于传统重建的输出构造新的训练数据，且通过子图采样补足长尾分布；</li>
+<li>WildMoGe 同样从传统重建出发，结合地理元数据恢复绝对尺度，作为单目模型的训练监督。</li>
+</ul>
+<p>这一立场是后续所有技术细节的根基。</p>
+<hr />
+<h2 id="三问题一视觉歧义doppelgänger">三、问题一：视觉歧义（Doppelgänger）</h2>
+<h3 id="31-现象与根源">3.1 现象与根源</h3>
+<p><strong>Doppelgänger</strong> 一词来自德语，意为"二重身"。在 3D 计算机视觉的语境下，它指一类<em>视觉上极其相似、但物理上本质不同</em>的物体表面或图像。</p>
+<p>其根源是<strong>视觉显著性（visual saliency）</strong>——算法对图像中最具吸引注意力的区域过度敏感，因而将外观相近的不同表面误判为同一对象。最典型的场景包括：</p>
+<ul>
+<li>对称建筑的东西立面（高度对称的视觉特征）</li>
+<li>重复纹理的墙面（如柱廊、栅栏）</li>
+<li>对称的雕塑、纪念碑</li>
+<li>商业建筑的标准化外立面</li>
+</ul>
+<p>这些场景共同的特点是：<strong>局部特征匹配会成功，但全局几何关系会冲突</strong>。SfM 系统在尝试三角化时，会强行将本属于不同表面的特征点折叠到同一空间位置，从而产生"鬼影"结构。</p>
+<h3 id="32-形式化方案在-view-graph-上断边">3.2 形式化方案：在 view graph 上"断边"</h3>
+<p>讲者团队的解决思路是：<strong>在 SfM 构建 view graph 的阶段，主动断开不应该被关联的图像对</strong>。</p>
+<p>这个思路最巧妙之处在于将一个三维空间中的语义歧义问题，<strong>降维成 view graph 上的二分类任务</strong>——训练一个判别器（DG++），判断每对被关联的图像是否真的在描绘同一个 3D 表面。</p>
+<p>完整的修复流水线：</p>
+<table>
+<thead>
+<tr class="header">
+<th>阶段</th>
+<th>操作</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Step 1</td>
+<td>Pairwise Matches</td>
+<td>用 SIFT / MASt3R 建立初始图像对匹配</td>
+</tr>
+<tr class="even">
+<td>Step 2</td>
+<td>DG++ Classifier</td>
+<td>判别器对每条边打分，输出 0/1 分类结果</td>
+</tr>
+<tr class="odd">
+<td>Step 3</td>
+<td>Prune Edges</td>
+<td>裁剪歧义边，得到干净的 view graph</td>
+</tr>
+<tr class="even">
+<td>Step 4</td>
+<td>Re-reconstruct</td>
+<td>在清洁图上重新 SfM/BA，得到无歧义重建</td>
+</tr>
+</tbody>
+</table>
+<h3 id="33-价值与可推广性">3.3 价值与可推广性</h3>
+<p>DG++ 与 MASt3R-SfM 结合后，在传统方法出错的情况下保持了较高的正确率，并成功修正了 MegaScenes 数据集中大量被误重建的场景。</p>
+<p>这个工作的价值不仅在于解决了 Doppelgänger 本身，更在于它确立了一个<strong>可推广的范式</strong>：</p>
+<blockquote>
+<p>把"3D 几何中的相似性歧义"问题，降维到"图边的二分类"。</p>
+</blockquote>
+<p>这一思路有可能扩展到其它 SfM 错误修复任务上——例如重复纹理的解构、动态场景中的运动物体过滤、跨域数据的注册修正等。任何可以表达为"图上某条边是否应当存在"的问题，原则上都可以套用类似框架。</p>
+<hr />
+<h2 id="四问题二长尾场景与鸡生蛋悖论">四、问题二：长尾场景与鸡生蛋悖论</h2>
+<h3 id="41-megascenes-的残酷真相">4.1 MegaScenes 的"残酷真相"</h3>
+<p>在用 DG++ 流水线清洗了 MegaScenes 数据集，并通过 MVS 获得稠密深度后（即数据集 MegaDepth-X，CVPR 2026），团队发现了一个更深层的问题。</p>
+<p>讲者展示了一张分布图：横轴是按图像数量排序的场景，纵轴是图像数量（对数尺度）。浅色表示收集到的 internet photos 总数，深色表示 COLMAP 成功注册的图像数。这张图清晰地呈现出一个<strong>幂律（power-law）分布</strong>：</p>
+<ul>
+<li>头部约 7,000 个场景（如知名地标）：图像数量充足，重建良好；</li>
+<li>中间约 75,000 个场景：注册图像数量快速下降；</li>
+<li>长尾 ~425,000 个场景：基本未被重建或重建结果稀疏不可用。</li>
+</ul>
+<p>讲者展示的两个具体例子很有说服力：</p>
+<blockquote>
+<p><strong>Case A（教堂内饰）</strong>：colmap 只注册了少量图像，π³ 给出的结果也不符合真实几何； <strong>Case B（雕塑群）</strong>：colmap 完全没有产生重建结果，π³ 的结果同样错乱。</p>
+</blockquote>
+<h3 id="42-数据处理细节megadepth-x-的清洗流水线">4.2 数据处理细节：MegaDepth-X 的清洗流水线</h3>
+<p>值得记录的是 MegaDepth-X 的具体处理过程：</p>
+<ol type="1">
+<li><strong>稀疏重建</strong>：用 MASt3R-SfM + Doppelgängers++ 得到 sparse point cloud；</li>
+<li><strong>稠密重建</strong>：用 COLMAP MVS 加 post-process 得到 dense point cloud；</li>
+<li><strong>瞬态物体过滤</strong>：通过 Gaussian Splatting 方案去除 in-the-wild 图像中常见的 transient objects（行人、车辆等动态遮挡物）；</li>
+<li><strong>深度泄漏修正</strong>：通过 depth ordering check 避免 depth bleeding（前后景边界处的深度穿插），获得更干净的深度图。</li>
+</ol>
+<p>整个清洗流水线本身就是一个不小的工程贡献——它把传统流水线 + 现代视觉方法结合起来，得到了远比 MegaScenes 原始版本更可用的训练数据。</p>
+<h3 id="43-鸡生蛋悖论的形式化">4.3 鸡生蛋悖论的形式化</h3>
+<p>但即便有了 MegaDepth-X，长尾场景的训练数据问题依然没有解决。讲者把这一困境形式化为一个<strong>鸡生蛋悖论</strong>：</p>
+<pre><code>① COLMAP 等经典方法在 sparse / non-overlapping / wide-baseline 视图下经常失败
+                                ↓
+② Data-driven 前馈模型有 powerful priors，理论上可以应对长尾
+                                ↓
+③ 但训练现代前馈模型需要 high-quality 3D supervision
+                                ↓
+④ 而 3D 监督信号本身就来自传统方法的输出 —— 长尾根本没有训练数据
+                                ↻
+                        （死循环）</code></pre>
+<p>这是一个结构性的死结：<strong>没有训练数据 → 模型学不会 → 重建不出来 → 还是没有训练数据</strong>。</p>
+<p>讲者明确指出，破解这一悖论是当前野外重建研究的核心挑战之一。这个观点很重要——它把研究瓶颈从"模型架构"转移到了"训练数据的可获得性"上。</p>
+<hr />
+<h2 id="五长尾模拟从头部场景构造训练样本">五、长尾模拟：从头部场景"构造"训练样本</h2>
+<h3 id="51-核心思路">5.1 核心思路</h3>
+<p>既然无法直接获得长尾场景的训练数据，团队提出了一种<strong>构造性方案</strong>——</p>
+<blockquote>
+<p>从 well-reconstructed 的 head 场景中采样出符合长尾特征的子图（subgraph），作为训练样本。</p>
+</blockquote>
+<p>这是一个非常巧妙的转换：把"获取长尾数据"的问题，变成了"在已有 head 数据上构造长尾分布"的问题。</p>
+<p>但要做到这一点，必须先回答：长尾场景在 view graph 上应当具备哪些特征？</p>
+<h3 id="52-长尾场景的三大特征定义">5.2 长尾场景的三大特征定义</h3>
+<p>通过分析真实长尾场景的 SfM viewgraph，讲者团队总结出三条特征：</p>
+<p><strong>i. 视角多样性（Viewpoint Diversity）</strong> 采样到的视角需覆盖较宽的 viewing direction 范围，确保模拟出的场景跨越多样的视觉透视。这反映了真实长尾场景中拍摄者意图的多样性。</p>
+<p><strong>ii. 空间稀疏性（Sparsity）</strong> 相机分布在地理位置上需足够远，以模拟长尾场景典型的 wide baseline 与可能的 disconnected components（多个不连通的子组件）。</p>
+<p><strong>iii. 局部可重建性（Local Reconstructability）</strong> view 之间仍需保留一定的 covisibility，以确保子集本身是可重建的——否则失去监督信号意义。</p>
+<p>这三条约束之间存在内在张力：多样性与稀疏性希望"拉开距离"，可重建性又要求"保持联系"。讲者团队的采样策略本质上是在这三者之间寻找一个<strong>有效的平衡点</strong>。</p>
+<h3 id="53-三步采样策略">5.3 三步采样策略</h3>
+<p>具体的算法分为三步：</p>
+<p><strong>Step 1 · Community Detection</strong> 基于 view graph 上的 match 数量，使用 <strong>Louvain 算法</strong>进行社区划分。同一社区内的相机紧密关联（通常代表相近的视角群组），不同社区代表不同的视角层级或拍摄区域。</p>
+<p><strong>Step 2 · Steiner Tree</strong> 从每个社区中随机选择一个 terminal node，然后构建斯坦纳树（Steiner Tree）以最少边数连接所有 terminal。这一步在保留全局可达性的同时，剔除冗余边，形成 skeleton subgraph。</p>
+<p><strong>Step 3 · Greedy Search</strong> 在 skeleton subgraph 上贪心搜索，优先选取<em>未采样过的 community</em> 与<em>地理距离更远</em>的 node。每次扩展一个节点，直到达到目标采样数量。</p>
+<p>讲者通过凯旋门重建的俯视图展示了完整过程：从初始 SfM 重建（黑色点云）→ Louvain 分社区（彩色聚类）→ 选择 terminal nodes（红色三角）→ 构建 Steiner 子图 → 8 步 greedy sampling → 最终 training batch。</p>
+<h3 id="54-一个值得关注的涌现现象">5.4 一个值得关注的涌现现象</h3>
+<p>将上述策略应用于 π³ 模型微调后，重建质量在 challenging 场景上显著改善。但更值得关注的是<strong>一个意外的观察</strong>：</p>
+<blockquote>
+<p>尽管训练过程中并未显式加入 Doppelgänger 监督信号，模型却涌现出了一定的 disambiguate similar surfaces 能力。</p>
+</blockquote>
+<p>讲者推测这暗示长尾监督本身可能<em>隐式地教会了模型对视觉歧义保持谨慎</em>——因为长尾子图中本来就常常包含 wide-baseline 与对称视角，模型为了在这种困难分布上正确预测，被迫学会了一种更鲁棒的相似性判断。</p>
+<p>这是一个值得深入研究的现象——<strong>通过分布上的"困难样本"训练，可能间接提升模型在多个相关任务上的鲁棒性</strong>。这对理解模型 priors 的形成机制有重要启发。</p>
+<hr />
+<h2 id="六问题三物理尺度恢复scale-collapse">六、问题三：物理尺度恢复（Scale Collapse）</h2>
+<h3 id="61-立场转变数据-vs-模型">6.1 立场转变：数据 vs. 模型</h3>
+<p>第三个工作呼应了开篇的 scale collapse 案例——<strong>WildMoGe</strong>。</p>
+<p>团队的核心立场是：很多时候模型本身并不缺乏能力，而是<em>训练数据的局限给模型划下了上限</em>。这个立场是从前两个工作中自然延伸出来的——既然数据是关键，那么对于 scale collapse 这个看起来"模型不够强"的问题，能不能也通过补充数据来解决？</p>
+<p>答案是肯定的。</p>
+<h3 id="62-两种获取真实尺度的数据源">6.2 两种获取真实尺度的数据源</h3>
+<p>要让单目 metric 模型在野外场景下正确恢复物理尺度，必须从数据源头入手。团队设计了两种数据获取方式：</p>
+<p><strong>Source A · Geo-registration（地理元数据锚定）</strong></p>
+<p>整合 internet photos 并采集额外的 geo-location 已知视角（如卫星图、航拍图像），通过 geo-registration 把 SfM 重建锚定到真实地理坐标系，从而恢复大场景的绝对物理尺度。这是一种利用<strong>外部公开元数据</strong>作为绝对锚点的策略。</p>
+<p><strong>Source B · Stereo Baseline（双目相机基线反推）</strong></p>
+<p>从 YouTube 双目视频（如 Stereo4D 项目）的视频描述中获取相机型号与基线信息——例如 Canon R5 + Dual Fisheye 镜头的 baseline ≈ 60mm。已知 baseline 后，反向求解整个场景的物理尺度。这是一种利用<strong>专业拍摄设备的标准参数</strong>作为锚点的策略。</p>
+<p>两种来源互补：Source A 适用于大场景（建筑、广场），Source B 适用于中小尺度场景（街道、室内）。</p>
+<h3 id="63-two-stage-edge-aware-深度补全">6.3 Two-Stage Edge-aware 深度补全</h3>
+<p>在数据处理过程中，团队还发现了一个工程难点：</p>
+<blockquote>
+<p>当前景与背景的 depth difference 较大时，传统基于 <strong>Poisson Reconstruction</strong> 的深度补全会出现明显 distortion。</p>
+</blockquote>
+<p>直观理解：泊松重建依赖的是平滑的梯度场，但当深度变化过于剧烈（例如人物站在远处建筑前），梯度场的不连续性会导致补全结果在边界附近"漂移"。</p>
+<p>为此，团队提出了两阶段方案：</p>
+<p><strong>Stage 1 · Background Completion</strong> 用 filtered MVS 的 anchor 与 gradient guidance 补全背景 base depth。这一步只关注背景的全局连续性，不试图处理前景。</p>
+<p><strong>Stage 2 · Edge-aware Composition</strong> 用 MoGe（基础单目模型）的前景深度与 base 背景做 edge-aware composition，避免 depth bleeding 问题。这一步显式地处理前后景的边界。</p>
+<p>最终得到的深度图既保留了背景的全局尺度，也保留了前景的局部细节。</p>
+<h3 id="64-实验结果">6.4 实验结果</h3>
+<p>在 MetricScenes 数据集上轻量微调 MoGe-2 后得到 <strong>WildMoGe</strong>。</p>
+<p>凯旋门宽度预测的对比：</p>
+<ul>
+<li>MoGe-2（基线）：18.8m（误差 -58%）</li>
+<li>WildMoGe（本工作）：43.4m（误差 -3.6%）</li>
+<li>Wikipedia 真值：45.0m</li>
+</ul>
+<p>其它案例也有显著改善：</p>
+<ul>
+<li>室内沙发预测尺寸：MoGe-2 给出 72cm；WildMoGe 修正为 81cm（接近真实）；</li>
+<li>在传统数据集上，WildMoGe 保持 on par 表现，证明微调没有破坏原有能力。</li>
+</ul>
+<p>这个结果具有相当的说服力——它证明了 <strong>scale collapse 不是模型能力不足，而是训练数据缺失</strong>。一旦数据补上，轻量微调就能打破天花板。</p>
+<hr />
+<h2 id="七反思数据工程作为模型设计的一部分">七、反思：数据工程作为模型设计的一部分</h2>
+<h3 id="71-演讲者的核心论点">7.1 演讲者的核心论点</h3>
+<p>整场演讲的核心论点可以浓缩为一句话：</p>
+<blockquote>
+<p>"It's not that the model isn't powerful enough. The limitation of training data draws a ceiling above it."</p>
+<p>（很多时候并不是模型本身不够强大，而是训练数据的分布给它划下了一条看不见的天花板。）</p>
+</blockquote>
+<p>三个 side work 看起来分别针对三个独立问题（视觉歧义、长尾分布、物理尺度），但它们指向的其实是同一种研究范式——<strong>把对数据的理解，当作模型设计的一部分</strong>。</p>
+<h3 id="72-三个可迁移的方法论洞察">7.2 三个可迁移的方法论洞察</h3>
+<p>我从这场演讲中提取出三个可以在其它 3D 视觉问题上迁移使用的方法论洞察：</p>
+<p><strong>Insight i · 传统几何方法与 data-driven 模型是互补关系</strong></p>
+<p>在 in-the-wild 场景上，传统 SfM/MVS 反而比 data-driven 模型更鲁棒；data-driven 模型的 priors 在长尾分布上展现潜力，但需以传统方法的输出为<strong>训练种子</strong>。两者不应被视为彼此替代，而应被组合使用。</p>
+<p>具体来说：传统方法擅长"局部对应关系的精确刻画"，data-driven 方法擅长"全局先验的快速预测"。理想的系统应当让两者协同——传统方法负责生成可信的局部约束，data-driven 方法负责在局部约束之上做全局补全。</p>
+<p><strong>Insight ii · 3D 几何问题往往可以被 reformulate 为图结构问题</strong></p>
+<p>Doppelgänger 解决方案的核心是 view graph 上的 binary classification；长尾采样的核心是 community detection + Steiner tree + greedy search。<strong>两者都把三维空间中的语义/分布问题，降维到了图算法可以高效处理的形式</strong>。</p>
+<p>这是一个值得在更多 3D 任务中尝试的思路——例如：</p>
+<ul>
+<li>多视图匹配的歧义消解 → 图上的边权学习</li>
+<li>跨域数据的注册 → 图划分问题</li>
+<li>动态场景的运动分组 → 图聚类问题</li>
+<li>Loop closure 检测 → 图上的相似性传播</li>
+</ul>
+<p><strong>Insight iii · 模型上限往往由数据分布决定，而非模型容量</strong></p>
+<p>WildMoGe 的成功表明，scale collapse 不源于 MoGe-2 架构的容量不足，而源于训练数据中缺乏 metric scale 的野外监督。一旦补上 geo-registration + stereo baseline 两类数据源，<strong>轻量 fine-tune 就足以打破天花板</strong>。</p>
+<p>这提示研究者：在追求更大模型之前，先审视数据分布是否覆盖了目标场景。在很多情况下，数据工程的边际收益可能远高于模型架构的边际收益。</p>
+<h3 id="73-个人补充思考">7.3 个人补充思考</h3>
+<p>这场演讲对我的启发还有几点：</p>
+<p><strong>关于"数据驱动"的反思</strong>：数据驱动方法的根本前提是"训练分布与测试分布近似一致"。但在野外场景下，这个前提常常被打破。此时单纯增加模型容量或训练时长并不能改善性能——必须从数据层面让分布对齐。这一点对所有 ML 研究都成立，但在 3D 视觉中尤其突出。</p>
+<p><strong>关于"鸡生蛋悖论"的普遍性</strong>：MegaScenes 的鸡生蛋问题不是 3D 视觉独有的——任何依赖"自动标注 + 监督学习"的领域都会遇到类似困境（例如自动驾驶的长尾场景、医学影像的罕见病例）。讲者团队的"从 head 模拟 tail"思路，可能可以推广到这些领域。</p>
+<p><strong>关于"涌现能力"的解释</strong>：第六节中提到的"长尾微调意外提升 Doppelgänger 鲁棒性"现象，与 LLM 中观察到的"难任务训练提升相关任务表现"现象有结构相似性。两者都暗示<strong>模型的能力空间可能是高度纠缠的</strong>，针对一个具体问题的优化常常会带来对其它问题的副作用——有时是正面的，有时是负面的。</p>
+<hr />
+<h2 id="八相关工作与脉络索引">八、相关工作与脉络索引</h2>
+<p>为方便未来回看，整理本演讲中涉及的关键工作与术语：</p>
+<p><strong>数据集</strong></p>
+<ul>
+<li>MegaScenes（ECCV 2024）：当前最大的 in-the-wild 场景数据集，作者通过 colmap 重建了世界各地的 landmark</li>
+<li>MegaDepth-X（CVPR 2026）：本演讲团队基于 MegaScenes 清洗与扩充得到的下一代数据集</li>
+</ul>
+<p><strong>模型与方法</strong></p>
+<ul>
+<li>COLMAP：经典 SfM 流水线</li>
+<li>MASt3R / MASt3R-SfM：基于 transformer 的现代 SfM 方法</li>
+<li>π³（Pi3）：data-driven 几何模型</li>
+<li>MoGe-2 / WildMoGe：单目 metric 几何估计模型</li>
+<li>DG++（Doppelgängers++）：本工作提出的视觉歧义判别器</li>
+<li>MetricScenes：本工作提出的带绝对尺度的野外数据集</li>
+<li>Stereo4D：YouTube 双目视频数据集</li>
+</ul>
+<p><strong>核心算法</strong></p>
+<ul>
+<li>Louvain Algorithm：基于模块度优化的图社区发现</li>
+<li>Steiner Tree：用最少边数连接指定 terminal 集合的树</li>
+<li>Poisson Reconstruction：基于散度场的几何/深度补全方法</li>
+</ul>
+<hr />
+<h2 id="结语">结语</h2>
+<p>这场演讲给我留下最深刻印象的，并不是任何单一的技术细节，而是讲者贯穿始终的一种<strong>研究品味</strong>——</p>
+<p>不被"更大更深的模型"的诱惑所牵引，而是反复回到一个朴素的问题：<strong>这个模型为什么会失败？失败的根本原因在数据还是在结构？如果在数据，能不能用最小代价把数据补全？</strong></p>
+<p>这是一种典型的"先理解问题，再设计方案"的工作方式。在如今这个 SOTA 频繁刷新、模型规模急速膨胀的时代，这种工作方式反而显得稀有。值得记录，也值得效仿。</p>
+    </article>
+  </main>
+
+  <div class="article-lightbox" id="articleLightbox" hidden role="dialog" aria-modal="true" aria-label="图片预览">
+    <button class="article-lightbox-backdrop" type="button" data-close aria-label="关闭预览"></button>
+    <div class="article-lightbox-panel">
+      <button class="article-lightbox-close" type="button" data-close aria-label="关闭">×</button>
+      <button class="article-lightbox-nav article-lightbox-prev" type="button" data-prev aria-label="上一张">‹</button>
+      <img id="articleLightboxImage" src="" alt="" />
+      <button class="article-lightbox-nav article-lightbox-next" type="button" data-next aria-label="下一张">›</button>
+      <p id="articleLightboxCount" class="article-lightbox-count"></p>
+    </div>
+  </div>
+
+  <footer class="footer"><p>© <span id="year"></span> Huiqing Zhang.</p></footer>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script src="article-gallery.js"></script>
+</body>
+</html>

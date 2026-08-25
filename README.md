@@ -34,7 +34,11 @@ huiqing-zhang-website/
 │           ├── rsba.jpg
 │           └── fec.jpg
 ├── blog/
-│   └── post-template.html      ← duplicate to write new posts
+│   ├── posts/                  ← Markdown 博客源文件（每篇一个 .md）
+│   ├── article-template.html   ← 所有文章共用的 HTML 模板
+│   ├── article.css             ← 所有文章共用的淡粉色主题
+│   ├── build_blog.py           ← 自动生成文章、Blog 列表和主页最新三篇
+│   └── build-blog.sh           ← 一键构建入口
 └── pubs/                        ← (optional) host your paper PDFs here
 ```
 
@@ -84,9 +88,10 @@ Inside `<section id="news">`, add a `<li>` at the top:
 Copy any existing `<article class="pub">…</article>` block and edit the title, authors, venue, and links. Drop the paper's teaser image into `assets/images/pubs/` (any aspect ratio — it's cropped to 4:3 automatically).
 
 ### Add a blog post
-1. Duplicate `blog/post-template.html` and rename it (e.g. `blog/2026-03-3dgs-notes.html`).
-2. Edit the title, date, and body.
-3. In `index.html` under `<section id="blog">`, copy one of the `<a class="blog-card">` blocks and point its `href` to your new file.
+
+Blog 内容不再直接编辑 HTML。所有文章均由 `blog/posts/` 中的 Markdown 自动生成，并使用同一套淡粉色学术主题。
+
+详细步骤见下方“新增 Blog”章节。
 
 ### Add your CV
 Save your PDF as `assets/cv.pdf` — the "CV" pill in the hero already links there.
@@ -128,13 +133,89 @@ Single breakpoint at 760px — the hero stacks, the timeline collapses, publicat
 - 头像：替换 `assets/images/avatar.jpg`
 - News：在 `<section id="news">` 加 `<li>`
 - 论文：复制一个 `<article class="pub">` 块改字即可，论文配图放进 `assets/images/pubs/`
-- 博客：复制 `blog/post-template.html` 改名，然后在主页 `#blog` 段加一张卡片指向它
+- 博客：将图片放入 `assets/images/blog/`，将 Markdown 放入 `blog/posts/`，然后运行 `./blog/build-blog.sh`
 - 配色：`assets/css/style.css` 顶部的 `:root` 变量
 - 部署：仓库命名为 `Kikihqq.github.io` → push → Settings 里开 Pages → 访问 `https://kikihqq.github.io/`
 
-- 以后修改 Markdown 后，在 blog 目录运行：
-./build-blog.sh
-即可用统一主题重新生成文章页面。
+---
+
+## 新增 Blog：只需图片和 Markdown
+
+### 1. 放入图片
+
+为文章建立单独的图片目录，例如：
+
+```text
+assets/images/blog/my-new-post/
+├── 01-cover.png
+├── 02-method.png
+└── 03-result.png
+```
+
+没有图片也可以；删除 Markdown 元信息中的 `gallery` 字段即可。
+
+### 2. 新建 Markdown
+
+在 `blog/posts/` 中新建文件。文件名会成为最终网址，建议使用：
+
+```text
+YYYY-MM-DD-英文短标题.md
+```
+
+例如 `blog/posts/2026-07-19-my-new-post.md`：
+
+```markdown
+---
+title: 文章标题
+date: 2026-07-19
+date-display: 2026 · 07 · 19
+description: 用一句话介绍这篇文章；它会同时显示在主页预览和 Blog 列表中。
+category: RESEARCH NOTES · 04
+tags: [3D Vision, Paper Reading]
+color: pink
+gallery:
+  - ../assets/images/blog/my-new-post/01-cover.png
+  - ../assets/images/blog/my-new-post/02-method.png
+  - ../assets/images/blog/my-new-post/03-result.png
+---
+
+## 摘要
+
+从这里开始写 Markdown 正文。
+
+## 第一节
+
+正文支持标题、列表、引用、表格、代码块和行内代码。
+```
+
+元信息说明：
+
+- `title`：文章标题，必填。
+- `date`：发布日期，格式必须为 `YYYY-MM-DD`，必填；列表会按此日期倒序排列。
+- `date-display`：文章页中显示的日期格式，可自行修改。
+- `description`：一句话简介，必填；主页和 Blog 列表共用。
+- `category`：标题上方的小分类文字，可选。
+- `tags`：Blog 列表中的标签，可选。
+- `color`：主页预览底色，可选 `pink`、`sand` 或 `sage`。
+- `gallery`：文章顶部图片列表，可选；图片支持横向滑动、点击放大和左右切换。
+
+### 3. 一键生成
+
+在项目根目录运行：
+
+```bash
+./blog/build-blog.sh
+```
+
+脚本会自动完成：
+
+1. 将 `blog/posts/*.md` 生成统一主题的 HTML 文章。
+2. 按发布日期更新 `blog/index.html`，每篇文章占一整行。
+3. 将最新三篇文章同步到主页 Blog 模块；超过三篇时主页只显示最新三篇。
+4. 为每篇文章生成统一目录、字体、标题、简介和图片画廊。
+
+运行环境需要 Python 3 和 Pandoc。更新 Markdown 或图片后，再运行一次相同命令即可。
+
 ---
 
 ## License

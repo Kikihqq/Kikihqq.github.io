@@ -30,23 +30,20 @@
     <header class="article-header">
       <p class="article-kicker">$if(category)$$category$$else$RESEARCH NOTES$endif$</p>
       <h1>$title$</h1>
-      <time class="article-date" datetime="$date-iso$">$date$</time>
+      <time class="article-date" datetime="$date$">$if(date-display)$$date-display$$else$$date$$endif$</time>
       <p class="article-deck">$description$</p>
     </header>
 
-    <section class="article-gallery" aria-label="演讲笔记图集">
+    $if(gallery)$
+    <section class="article-gallery" aria-label="文章图集">
       <div class="gallery-strip" id="articleGallery">
-        <button class="gallery-slide" type="button" data-index="0"><img src="../assets/images/blog/robust-geometry/01-cover.png" alt="演讲笔记封面" /></button>
-        <button class="gallery-slide" type="button" data-index="1"><img src="../assets/images/blog/robust-geometry/02-problem-framing.png" alt="问题立论" /></button>
-        <button class="gallery-slide" type="button" data-index="2"><img src="../assets/images/blog/robust-geometry/03-paradigm-comparison.png" alt="重建范式比较" /></button>
-        <button class="gallery-slide" type="button" data-index="3"><img src="../assets/images/blog/robust-geometry/04-visual-ambiguity.png" alt="视觉歧义" /></button>
-        <button class="gallery-slide" type="button" data-index="4"><img src="../assets/images/blog/robust-geometry/05-long-tail.png" alt="长尾分布" /></button>
-        <button class="gallery-slide" type="button" data-index="5"><img src="../assets/images/blog/robust-geometry/06-long-tail-simulation.png" alt="长尾模拟" /></button>
-        <button class="gallery-slide" type="button" data-index="6"><img src="../assets/images/blog/robust-geometry/07-metric-scale.png" alt="物理尺度恢复" /></button>
-        <button class="gallery-slide" type="button" data-index="7"><img src="../assets/images/blog/robust-geometry/08-reflection.png" alt="方法论反思" /></button>
+        $for(gallery)$
+        <button class="gallery-slide" type="button"><img src="$gallery$" alt="$title$ 配图" /></button>
+        $endfor$
       </div>
       <p class="gallery-help">滑动浏览 · 点击图片放大</p>
     </section>
+    $endif$
 
     <div class="article-layout">
       <aside class="article-sidebar" aria-label="文章目录">

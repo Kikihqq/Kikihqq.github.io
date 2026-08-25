@@ -1,3 +1,21 @@
+---
+title: 野外环境下的鲁棒三维重建
+date: 2026-04-24
+date-display: 2026 · 04 · 24
+description: 从视觉歧义、长尾分布与物理尺度塌缩出发，复盘野外三维重建的研究路径，并讨论数据工程如何成为模型设计的一部分。
+category: LECTURE NOTES · 03
+tags: [3D Reconstruction, In-the-wild, Lecture Notes]
+color: pink
+gallery:
+  - ../assets/images/blog/robust-geometry/01-cover.png
+  - ../assets/images/blog/robust-geometry/02-problem-framing.png
+  - ../assets/images/blog/robust-geometry/03-paradigm-comparison.png
+  - ../assets/images/blog/robust-geometry/04-visual-ambiguity.png
+  - ../assets/images/blog/robust-geometry/05-long-tail.png
+  - ../assets/images/blog/robust-geometry/06-long-tail-simulation.png
+  - ../assets/images/blog/robust-geometry/07-metric-scale.png
+  - ../assets/images/blog/robust-geometry/08-reflection.png
+---
 
 > 整理自相里元博 (Yuanbo Xiangli) 的学术演讲《Towards Robust Geometric Models in the Wild》。本文以研究复盘的视角，详细记录其问题立论、技术方案与方法论反思。
 
@@ -372,3 +390,21 @@ WildMoGe 的成功表明，scale collapse 不源于 MoGe-2 架构的容量不足
 不被"更大更深的模型"的诱惑所牵引，而是反复回到一个朴素的问题：**这个模型为什么会失败？失败的根本原因在数据还是在结构？如果在数据，能不能用最小代价把数据补全？**
 
 这是一种典型的"先理解问题，再设计方案"的工作方式。在如今这个 SOTA 频繁刷新、模型规模急速膨胀的时代，这种工作方式反而显得稀有。值得记录，也值得效仿。 
+---
+title: 野外环境下的鲁棒三维重建
+date: 2026-04-24
+date-display: 2026 · 04 · 24
+description: 从视觉歧义、长尾分布与物理尺度塌缩出发，复盘野外三维重建的研究路径，并讨论数据工程如何成为模型设计的一部分。
+category: LECTURE NOTES · 03
+tags: [3D Reconstruction, In-the-wild, Lecture Notes]
+color: pink
+gallery:
+  - ../assets/images/blog/robust-geometry/01-cover.png
+  - ../assets/images/blog/robust-geometry/02-problem-framing.png
+  - ../assets/images/blog/robust-geometry/03-paradigm-comparison.png
+  - ../assets/images/blog/robust-geometry/04-visual-ambiguity.png
+  - ../assets/images/blog/robust-geometry/05-long-tail.png
+  - ../assets/images/blog/robust-geometry/06-long-tail-simulation.png
+  - ../assets/images/blog/robust-geometry/07-metric-scale.png
+  - ../assets/images/blog/robust-geometry/08-reflection.png
+---

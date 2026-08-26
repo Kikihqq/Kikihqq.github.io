@@ -96,7 +96,7 @@ def build_index(posts: list[dict]) -> None:
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../assets/css/style.css" /><link rel="stylesheet" href="index.css" /><link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" /></head>
 <body><nav class="nav"><div class="nav-inner"><a href="../index.html#top" class="nav-brand">Huiqing&nbsp;Zhang</a><ul class="nav-links"><li><a href="../index.html#about">About</a></li><li><a href="../index.html#publications">Publications</a></li><li><a href="../cv.html">CV</a></li><li><a href="index.html" class="active">Blog</a></li></ul></div></nav>
-<main class="blog-index-shell"><header class="blog-index-header"><a href="../index.html" class="back-link">← 返回主页</a><p class="blog-index-eyebrow">RESEARCH NOTES · PAPER READINGS</p><h1>Blog</h1><p>研究笔记、论文阅读，以及一些尚在生长的想法。</p></header>
+<main class="blog-index-shell"><header class="blog-index-header"><a href="../index.html" class="back-link">← Back to home</a><p class="blog-index-eyebrow">RESEARCH NOTES · PAPER READINGS</p><h1>Blog</h1><p>Research notes, paper readings, and ideas still taking shape.</p></header>
 <section class="blog-feed" aria-label="博客文章">\n{items}\n</section></main>
 <footer class="footer"><p>© <span id="year"></span> Huiqing Zhang. Built with care · Hosted on GitHub Pages.</p></footer><script>document.getElementById('year').textContent = new Date().getFullYear();</script></body></html>'''
     (BLOG / "index.html").write_text(page, encoding="utf-8")

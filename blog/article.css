@@ -1,18 +1,22 @@
 body { background: #fff; }
 .article-shell { max-width: 1180px; margin: 0 auto; padding: 44px 28px 96px; }
-.article-header { width: min(100%, 820px); margin: 48px 0 40px; padding-bottom: 34px; border-bottom: 1px solid #ead8d5; }
+.article-header { width: min(100%, 820px); margin: 48px 0 40px; padding-bottom: 34px; border-bottom: 1px solid var(--line); }
 .article-kicker { margin: 0 0 12px; color: var(--lotus-deep); font-family: "Times New Roman", serif; font-size: .78rem; font-weight: 700; letter-spacing: .22em; }
 .article-header h1 { width: 100%; margin: 0; font-family: "Times New Roman", "Songti SC", "STSong", serif; font-size: clamp(2.2rem, 5vw, 3.8rem); font-weight: 600; line-height: 1.08; letter-spacing: -.02em; }
-.article-date { display: block; margin-top: 20px; color: #a06b65; font-family: "Times New Roman", serif; font-size: 1.08rem; font-weight: 600; }
-.article-deck { width: 100%; margin: 22px 0 0; padding-left: 18px; border-left: 3px solid var(--lotus); color: var(--ink-soft); font-family: "Times New Roman", "Songti SC", serif; font-size: 1.1rem; font-weight: 500; line-height: 1.8; }
+.article-date { display: block; margin-top: 20px; color: var(--ink-mute); font-family: "Times New Roman", serif; font-size: 1.08rem; font-weight: 600; }
+.article-deck { width: 100%; margin: 22px 0 0; padding-left: 18px; border-left: 2px solid var(--ink); color: var(--ink-soft); font-family: "Times New Roman", "Songti SC", serif; font-size: 1.1rem; font-weight: 500; line-height: 1.8; }
+.article-resource-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.article-resource-actions a { padding: 7px 11px; border: 1px solid var(--line); color: var(--ink); font-size: .82rem; font-weight: 600; }
+.document-preview { margin: 0 0 56px; border: 1px solid var(--line); background: #f7f7f7; }
+.document-preview iframe { display: block; width: 100%; height: min(78vh, 820px); border: 0; }
 .article-gallery { margin: 0 0 54px; }
 .gallery-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 30%); gap: 14px; overflow-x: auto; padding: 3px 3px 15px; scroll-snap-type: x mandatory; scrollbar-color: var(--lotus) var(--line-soft); }
-.gallery-slide { scroll-snap-align: start; padding: 0; background: var(--lotus-soft); border: 1px solid #d9bbb6; cursor: zoom-in; overflow: hidden; }
+.gallery-slide { scroll-snap-align: start; padding: 0; background: #f7f7f7; border: 1px solid var(--line); cursor: zoom-in; overflow: hidden; }
 .gallery-slide img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; transition: transform .25s ease; }
 .gallery-slide:hover img { transform: scale(1.02); }
 .gallery-help { margin: 8px 0 0; color: var(--ink-mute); font-family: "Times New Roman", "Songti SC", serif; font-size: .78rem; text-align: right; }
 .article-layout { display: grid; grid-template-columns: 220px minmax(0, 760px); justify-content: center; gap: clamp(42px, 7vw, 92px); align-items: start; }
-.article-sidebar { position: sticky; top: 92px; padding: 20px; border: 1px solid #e3cbc7; background: #fff; font-family: "Times New Roman", "Songti SC", serif; font-size: .82rem; }
+.article-sidebar { position: sticky; top: 92px; padding: 20px; border: 1px solid var(--line); background: #fff; font-family: "Times New Roman", "Songti SC", serif; font-size: .82rem; }
 .article-sidebar-label { margin: 0 0 14px; color: var(--lotus-deep); font-size: .7rem; font-weight: 700; letter-spacing: .18em; }
 .article-sidebar ul { list-style: none; margin: 0; padding: 0; }
 .article-sidebar ul ul { display: none; }
@@ -20,11 +24,11 @@ body { background: #fff; }
 .article-sidebar a { color: var(--ink-soft); }
 .article-sidebar a:hover { color: var(--lotus-deep); }
 .article-content { min-width: 0; color: var(--ink-soft); font-family: "Times New Roman", "Songti SC", "STSong", serif; font-size: 1.12rem; line-height: 1.9; }
-.article-content h2 { margin: 64px 0 20px; padding-top: 20px; border-top: 1px solid #d9bbb6; font-family: "Times New Roman", "Songti SC", "STSong", serif; color: var(--ink); font-size: 1.82rem; line-height: 1.25; }
+.article-content h2 { margin: 64px 0 20px; padding-top: 20px; border-top: 1px solid var(--line); font-family: "Times New Roman", "Songti SC", "STSong", serif; color: var(--ink); font-size: 1.82rem; line-height: 1.25; }
 .article-content h2:first-child { margin-top: 0; }
 .article-content h3 { margin: 36px 0 12px; font-family: "Times New Roman", "Songti SC", "STSong", serif; color: var(--ink); font-size: 1.3rem; line-height: 1.35; }
 .article-content p { margin: 0 0 18px; }
-.article-content blockquote { margin: 28px 0; padding: 22px 26px; background: #faecea; border-left: 3px solid var(--lotus); color: var(--ink); }
+.article-content blockquote { margin: 28px 0; padding: 22px 26px; background: #f7f7f7; border-left: 3px solid var(--ink); color: var(--ink); }
 .article-content blockquote p:last-child { margin-bottom: 0; }
 .article-content ul, .article-content ol { margin: 0 0 22px; padding-left: 1.4rem; }
 .article-content li { margin-bottom: 8px; }
@@ -32,9 +36,9 @@ body { background: #fff; }
 .article-content pre code { padding: 0; background: transparent; color: inherit; font-family: inherit; }
 .article-content table { width: 100%; margin: 26px 0; border-collapse: collapse; font-size: .9rem; }
 .article-content th, .article-content td { padding: 11px 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
-.article-content th { background: #faecea; color: var(--ink); }
+.article-content th { background: #f3f3f3; color: var(--ink); }
 .article-content hr { border: 0; border-top: 1px solid var(--line); margin: 48px 0; }
-.article-content code { padding: 2px 5px; background: #faecea; color: var(--lotus-deep); font-family: "Times New Roman", "Songti SC", "STSong", serif; }
+.article-content code { padding: 2px 5px; background: #f3f3f3; color: var(--ink); font-family: "Times New Roman", "Songti SC", "STSong", serif; }
 .article-lightbox[hidden] { display: none; }
 .article-lightbox { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 34px; }
 .article-lightbox-backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(14,12,10,.9); }

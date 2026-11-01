@@ -32,7 +32,19 @@
       <h1>$title$</h1>
       <time class="article-date" datetime="$date$">$if(date-display)$$date-display$$else$$date$$endif$</time>
       <p class="article-deck">$description$</p>
+      $if(document)$
+      <div class="article-resource-actions">
+        $if(preview)$<a href="$preview$" target="_blank" rel="noopener">View PDF ↗</a>$endif$
+        <a href="$document$" target="_blank" rel="noopener">Open $format$ ↗</a>
+      </div>
+      $endif$
     </header>
+
+    $if(preview)$
+    <section class="document-preview" aria-label="Document preview">
+      <iframe src="$preview$#view=FitH" title="$title$ PDF preview"></iframe>
+    </section>
+    $endif$
 
     $if(gallery)$
     <section class="article-gallery" aria-label="文章图集">

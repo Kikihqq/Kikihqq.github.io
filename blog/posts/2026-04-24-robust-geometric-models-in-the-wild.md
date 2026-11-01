@@ -4,6 +4,7 @@ date: 2026-04-24
 date-display: 2026 · 04 · 24
 description: 从视觉歧义、长尾分布与物理尺度塌缩出发，复盘野外三维重建的研究路径，并讨论数据工程如何成为模型设计的一部分。
 category: LECTURE NOTES · 03
+format: markdown
 tags: [3D Reconstruction, In-the-wild, Lecture Notes]
 color: pink
 gallery:

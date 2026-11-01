@@ -48,6 +48,27 @@ def esc(value: object) -> str:
     return html.escape(str(value), quote=True)
 
 
+def kind(post: dict) -> str:
+    return str(post.get("format", "markdown")).upper()
+
+
+def resource_actions(post: dict, prefix: str = "") -> str:
+    slug = esc(post["slug"])
+    actions = [f'<a href="{prefix}{slug}.html">Read notes →</a>']
+    document = post.get("document")
+    preview = post.get("preview")
+    if prefix == "blog/":
+        document = str(document)[3:] if document and str(document).startswith("../") else document
+        preview = str(preview)[3:] if preview and str(preview).startswith("../") else preview
+    post_format = str(post.get("format", "markdown")).lower()
+    if preview:
+        actions.append(f'<a href="{esc(preview)}" target="_blank" rel="noopener">View PDF ↗</a>')
+    if document:
+        label = "View PDF ↗" if post_format == "pdf" else "Download slides ↓"
+        actions.append(f'<a href="{esc(document)}" target="_blank" rel="noopener">{label}</a>')
+    return "".join(actions)
+
+
 def build_post(path: Path) -> dict:
     meta = metadata(path)
     slug = path.stem
@@ -66,25 +87,30 @@ def build_post(path: Path) -> dict:
 
 
 def entry(post: dict) -> str:
-    tags = " &nbsp; ".join(f"#{esc(tag)}" for tag in post.get("tags", []))
+    tags = " ".join(f'<span>#{esc(tag)}</span>' for tag in post.get("tags", []))
     return f'''      <article class="blog-entry">
+        <div class="blog-entry-rail">
+          <span class="blog-entry-kind">{kind(post)}</span>
+          <time datetime="{esc(post['date'])}">{post['date_sort'].strftime('%b %d, %Y')}</time>
+        </div>
         <div class="blog-entry-copy">
-          <time datetime="{esc(post['date'])}">{post['date_sort'].strftime('%B %d, %Y')}</time>
           <h2><a href="{esc(post['slug'])}.html">{esc(post['title'])}</a></h2>
           <p class="blog-entry-tags">{tags}</p>
           <p class="blog-entry-summary">{esc(post['description'])}</p>
-          <a class="blog-entry-more" href="{esc(post['slug'])}.html">阅读全文 <span>→</span></a>
+          <div class="blog-entry-actions">{resource_actions(post)}</div>
         </div>
       </article>'''
 
 
 def card(post: dict, position: int) -> str:
-    colors = ("pink", "sand", "sage")
-    color = post.get("color") or colors[position % len(colors)]
-    return f'''          <a class="blog-card blog-card-{esc(color)}" href="blog/{esc(post['slug'])}.html">
+    tags = " ".join(f"#{esc(tag)}" for tag in post.get("tags", [])[:2])
+    return f'''          <article class="blog-card">
+            <div class="blog-card-meta"><span class="blog-kind">{kind(post)}</span><time datetime="{esc(post['date'])}">{post['date_sort'].strftime('%Y.%m.%d')}</time></div>
             <h3>{esc(post['title'])}</h3>
             <p>{esc(post['description'])}</p>
-          </a>'''
+            <p class="blog-card-tags">{tags}</p>
+            <div class="blog-card-actions">{resource_actions(post, 'blog/')}</div>
+          </article>'''
 
 
 def build_index(posts: list[dict]) -> None:
@@ -96,7 +122,7 @@ def build_index(posts: list[dict]) -> None:
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../assets/css/style.css" /><link rel="stylesheet" href="index.css" /><link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" /></head>
 <body><nav class="nav"><div class="nav-inner"><a href="../index.html#top" class="nav-brand">Huiqing&nbsp;Zhang</a><ul class="nav-links"><li><a href="../index.html#about">About</a></li><li><a href="../index.html#publications">Publications</a></li><li><a href="../cv.html">CV</a></li><li><a href="index.html" class="active">Blog</a></li></ul></div></nav>
-<main class="blog-index-shell"><header class="blog-index-header"><a href="../index.html" class="back-link">← Back to home</a><p class="blog-index-eyebrow">RESEARCH NOTES · PAPER READINGS</p><h1>Blog</h1><p>Research notes, paper readings, and ideas still taking shape.</p></header>
+<main class="blog-index-shell"><header class="blog-index-header"><a href="../index.html" class="back-link">← Back to home</a><p class="blog-index-eyebrow">NOTES · SLIDES · DOCUMENTS</p><h1>Research Notes</h1><p>A public notebook for paper readings, technical presentations, and ideas that become clearer through writing.</p></header>
 <section class="blog-feed" aria-label="博客文章">\n{items}\n</section></main>
 <footer class="footer"><p>© <span id="year"></span> Huiqing Zhang. Built with care · Hosted on GitHub Pages.</p></footer><script>document.getElementById('year').textContent = new Date().getFullYear();</script></body></html>'''
     (BLOG / "index.html").write_text(page, encoding="utf-8")

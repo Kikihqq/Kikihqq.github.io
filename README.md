@@ -154,6 +154,12 @@ assets/images/blog/my-new-post/
 
 没有图片也可以；删除 Markdown 元信息中的 `gallery` 字段即可。
 
+PDF、PPT 或 PPTX 建议放在：
+
+```text
+assets/blog/files/
+```
+
 ### 2. 新建 Markdown
 
 在 `blog/posts/` 中新建文件。文件名会成为最终网址，建议使用：
@@ -171,6 +177,7 @@ date: 2026-07-19
 date-display: 2026 · 07 · 19
 description: 用一句话介绍这篇文章；它会同时显示在主页预览和 Blog 列表中。
 category: RESEARCH NOTES · 04
+format: markdown
 tags: [3D Vision, Paper Reading]
 color: pink
 gallery:
@@ -195,9 +202,58 @@ gallery:
 - `date-display`：文章页中显示的日期格式，可自行修改。
 - `description`：一句话简介，必填；主页和 Blog 列表共用。
 - `category`：标题上方的小分类文字，可选。
+- `format`：内容类型，可选 `markdown`、`pdf` 或 `slides`；不填写时默认为 `markdown`。
 - `tags`：Blog 列表中的标签，可选。
 - `color`：主页预览底色，可选 `pink`、`sand` 或 `sage`。
 - `gallery`：文章顶部图片列表，可选；图片支持横向滑动、点击放大和左右切换。
+
+### PDF 文章
+
+PDF 类型仍使用一个简短 Markdown 文件记录标题、日期、简介和可选补充说明：
+
+```markdown
+---
+title: 论文阅读报告
+date: 2026-08-20
+date-display: 2026 · 08 · 20
+description: 对一篇三维重建论文的完整阅读报告。
+category: PAPER READING
+format: pdf
+tags: [3D Reconstruction, Paper Reading]
+document: ../assets/blog/files/paper-reading.pdf
+preview: ../assets/blog/files/paper-reading.pdf
+---
+
+## About this document
+
+这里可以补充 PDF 的背景、主要结论或阅读说明。
+```
+
+`preview` 会在文章页面中嵌入 PDF，`document` 会生成独立打开 PDF 的按钮。
+
+### PPT / PPTX 幻灯片
+
+浏览器通常不能直接预览 PPTX，因此建议同时导出一份 PDF：
+
+```markdown
+---
+title: 三维视觉课程汇报
+date: 2026-09-01
+date-display: 2026 · 09 · 01
+description: 关于多视图几何与三维重建的课程汇报。
+category: PRESENTATION
+format: slides
+tags: [Presentation, Multi-view Geometry]
+document: ../assets/blog/files/3d-vision-talk.pptx
+preview: ../assets/blog/files/3d-vision-talk.pdf
+---
+
+## Presentation overview
+
+这里可以写汇报摘要、目录和相关链接。
+```
+
+Blog 页面会提供 PDF 预览和 PPTX 原文件下载入口。
 
 ### 3. 一键生成
 

@@ -39,6 +39,12 @@ body { background: #fff; }
 .article-content th { background: #f3f3f3; color: var(--ink); }
 .article-content hr { border: 0; border-top: 1px solid var(--line); margin: 48px 0; }
 .article-content code { padding: 2px 5px; background: #f3f3f3; color: var(--ink); font-family: "Times New Roman", "Songti SC", "STSong", serif; }
+.wave { text-decoration-line: underline; text-decoration-style: wavy; text-decoration-thickness: 1.5px; text-underline-offset: 4px; text-decoration-skip-ink: none; }
+.wave-rose { text-decoration-color: #b98b88; } .wave-clay { text-decoration-color: #bd9a83; }
+.wave-ochre { text-decoration-color: #c2a35b; } .wave-sage { text-decoration-color: #8f9a79; }
+.wave-moss { text-decoration-color: #75836b; } .wave-teal { text-decoration-color: #71918d; }
+.wave-blue { text-decoration-color: #8297aa; } .wave-periwinkle { text-decoration-color: #8d91aa; }
+.wave-mauve { text-decoration-color: #a18a9f; } .wave-graphite { text-decoration-color: #77736f; }
 .article-lightbox[hidden] { display: none; }
 .article-lightbox { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 34px; }
 .article-lightbox-backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(14,12,10,.9); }

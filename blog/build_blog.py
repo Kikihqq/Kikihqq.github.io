@@ -122,7 +122,7 @@ def build_index(posts: list[dict]) -> None:
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../assets/css/style.css" /><link rel="stylesheet" href="index.css" /><link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" /></head>
 <body><nav class="nav"><div class="nav-inner"><a href="../index.html#top" class="nav-brand">Huiqing&nbsp;Zhang</a><ul class="nav-links"><li><a href="../index.html#about">About</a></li><li><a href="../index.html#publications">Publications</a></li><li><a href="../cv.html">CV</a></li><li><a href="index.html" class="active">Blog</a></li></ul></div></nav>
-<main class="blog-index-shell"><header class="blog-index-header"><a href="../index.html" class="back-link">← Back to home</a><p class="blog-index-eyebrow">NOTES · SLIDES · DOCUMENTS</p><h1>Research Notes</h1><p>A public notebook for paper readings, technical presentations, and ideas that become clearer through writing.</p></header>
+<main class="blog-index-shell"><header class="blog-index-header"><div class="blog-index-top"><a href="../index.html" class="back-link">← Back to home</a><a href="editor.html" class="blog-write-link">Write a note →</a></div><p class="blog-index-eyebrow">NOTES · SLIDES · DOCUMENTS</p><h1>What I am learning.</h1><p>A public notebook for paper readings, technical presentations, and ideas that become clearer through writing.</p></header>
 <section class="blog-feed" aria-label="博客文章">\n{items}\n</section></main>
 <footer class="footer"><p>© <span id="year"></span> Huiqing Zhang. Built with care · Hosted on GitHub Pages.</p></footer><script>document.getElementById('year').textContent = new Date().getFullYear();</script></body></html>'''
     (BLOG / "index.html").write_text(page, encoding="utf-8")
@@ -131,8 +131,8 @@ def build_index(posts: list[dict]) -> None:
 def update_home(posts: list[dict]) -> None:
     path = ROOT / "index.html"
     text = path.read_text(encoding="utf-8")
-    start = '        <div class="blog-list">'
-    end = '        </div>\n        <p class="blog-more">'
+    start = '          <div class="blog-list" id="blogCarousel">'
+    end = '          </div>\n          <div class="blog-carousel-controls">'
     before, remainder = text.split(start, 1)
     _, after = remainder.split(end, 1)
     cards = "\n".join(card(post, i) for i, post in enumerate(posts[:3]))

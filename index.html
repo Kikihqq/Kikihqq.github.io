@@ -121,13 +121,14 @@
     <section id="blog" class="section">
       <div class="blog-section-head">
         <div>
-          <h2 class="section-title">Research Notes</h2>
-          <p class="blog-intro">Reading notes, technical presentations, and longer-form research reflections.</p>
+          <p class="blog-eyebrow">BLOG / NOTES</p>
+          <h2 class="blog-showcase-title">What I am learning.</h2>
         </div>
-        <a href="blog/index.html">Browse the archive →</a>
+        <div class="blog-head-actions"><a href="blog/editor.html">Write a note</a><a href="blog/index.html">All posts ↗</a></div>
       </div>
       <div class="section-body">
-        <div class="blog-list">
+        <div class="blog-carousel" aria-label="Latest blog posts">
+          <div class="blog-list" id="blogCarousel">
           <article class="blog-card">
             <div class="blog-card-meta"><span class="blog-kind">MARKDOWN</span><time datetime="2026-04-24">2026.04.24</time></div>
             <h3>野外环境下的鲁棒三维重建</h3>
@@ -135,10 +136,12 @@
             <p class="blog-card-tags">#3D Reconstruction #In-the-wild</p>
             <div class="blog-card-actions"><a href="blog/2026-04-24-robust-geometric-models-in-the-wild.html">Read notes →</a></div>
           </article>
+          </div>
+          <div class="blog-carousel-controls">
+            <span class="blog-carousel-count"><span id="blogCarouselCurrent">01</span> / <span id="blogCarouselTotal">01</span></span>
+            <div class="blog-carousel-buttons"><button type="button" id="blogCarouselPrev" aria-label="Previous post">←</button><button type="button" id="blogCarouselPause" aria-label="Pause carousel">Ⅱ</button><button type="button" id="blogCarouselNext" aria-label="Next post">→</button></div>
+          </div>
         </div>
-        <p class="blog-more">
-          <a href="blog/index.html">View all posts &rarr;</a>
-        </p>
       </div>
     </section>
 

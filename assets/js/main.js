@@ -94,6 +94,54 @@ sections.forEach(s => observer.observe(s));
   }, { passive: true });
 })();
 
+// Compact homepage blog carousel. It pauses when the user interacts with it.
+(function () {
+  const track = document.getElementById('blogCarousel');
+  if (!track) return;
+  const cards = [...track.querySelectorAll('.blog-card')];
+  const currentEl = document.getElementById('blogCarouselCurrent');
+  const totalEl = document.getElementById('blogCarouselTotal');
+  const prev = document.getElementById('blogCarouselPrev');
+  const next = document.getElementById('blogCarouselNext');
+  const pause = document.getElementById('blogCarouselPause');
+  let index = 0;
+  let paused = false;
+  let timer;
+
+  const label = value => String(value).padStart(2, '0');
+  const sync = () => {
+    currentEl.textContent = label(index + 1);
+    totalEl.textContent = label(cards.length);
+    const single = cards.length < 2;
+    prev.disabled = single;
+    next.disabled = single;
+    pause.disabled = single;
+  };
+  const go = value => {
+    index = (value + cards.length) % cards.length;
+    track.scrollTo({ left: cards[index].offsetLeft - track.offsetLeft, behavior: 'smooth' });
+    sync();
+  };
+  const restart = () => {
+    window.clearInterval(timer);
+    if (!paused && cards.length > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      timer = window.setInterval(() => go(index + 1), 4500);
+    }
+  };
+  prev.addEventListener('click', () => { go(index - 1); restart(); });
+  next.addEventListener('click', () => { go(index + 1); restart(); });
+  pause.addEventListener('click', () => {
+    paused = !paused;
+    pause.textContent = paused ? '▶' : 'Ⅱ';
+    pause.setAttribute('aria-label', paused ? 'Resume carousel' : 'Pause carousel');
+    restart();
+  });
+  track.addEventListener('pointerdown', () => { paused = true; pause.textContent = '▶'; restart(); }, { passive: true });
+  window.addEventListener('resize', () => go(index));
+  sync();
+  restart();
+})();
+
 // ==========================================================
 // Research interest chips — click to open a detail modal.
 // ==========================================================

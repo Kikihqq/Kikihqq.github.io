@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown Studio | Huiqing Zhang</title>
+  <meta name="description" content="A local-first Markdown writing studio for Huiqing Zhang's blog." />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="editor.css" />
+  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
+</head>
+<body>
+  <header class="studio-header">
+    <div>
+      <a class="studio-back" href="index.html">← Back to Blog</a>
+      <p class="studio-eyebrow">LOCAL-FIRST WRITING TOOL</p>
+      <h1>Markdown Studio</h1>
+    </div>
+    <div class="studio-actions">
+      <span id="saveStatus" class="save-status">Draft saved locally</span>
+      <label class="studio-button secondary">Import .md<input id="importFile" type="file" accept=".md,text/markdown" hidden /></label>
+      <button id="copyMarkdown" class="studio-button secondary" type="button">Copy</button>
+      <button id="exportMarkdown" class="studio-button" type="button">Export .md</button>
+    </div>
+  </header>
+
+  <main class="studio-shell">
+    <section class="metadata-panel" aria-label="Article metadata">
+      <label>Title<input id="postTitle" type="text" placeholder="Article title" /></label>
+      <label>Date<input id="postDate" type="date" /></label>
+      <label>Category<input id="postCategory" type="text" placeholder="NOTES · 01" /></label>
+      <label>Tags<input id="postTags" type="text" placeholder="3D Vision, Reading Notes" /></label>
+      <label class="metadata-wide">One-line summary<input id="postDescription" type="text" placeholder="A short introduction shown on the homepage and Blog index." /></label>
+    </section>
+
+    <section class="workspace">
+      <div class="editor-pane">
+        <div class="pane-heading"><div><span>WRITE</span><strong>Markdown</strong></div><span id="wordCount">0 words · 0 characters</span></div>
+        <div class="toolbar" aria-label="Markdown formatting tools">
+          <div class="toolbar-group">
+            <button type="button" data-wrap="**|**" title="Bold"><b>B</b></button>
+            <button type="button" data-wrap="*|*" title="Italic"><i>I</i></button>
+            <button type="button" data-prefix="## " title="Heading 2">H2</button>
+            <button type="button" data-prefix="### " title="Heading 3">H3</button>
+            <button type="button" data-wrap="`|`" title="Inline code">&lt;/&gt;</button>
+            <button type="button" data-prefix="> " title="Quote">❞</button>
+            <button type="button" data-prefix="- " title="List">• List</button>
+            <button type="button" data-wrap="[|](https://)" title="Link">Link</button>
+          </div>
+          <div class="toolbar-group color-tools" aria-label="Morandi wavy underline colors">
+            <span class="color-label">Wavy underline</span>
+            <button type="button" class="color-dot rose" data-wave="rose" title="Dusty rose"></button>
+            <button type="button" class="color-dot clay" data-wave="clay" title="Clay"></button>
+            <button type="button" class="color-dot ochre" data-wave="ochre" title="Ochre"></button>
+            <button type="button" class="color-dot sage" data-wave="sage" title="Sage"></button>
+            <button type="button" class="color-dot moss" data-wave="moss" title="Moss"></button>
+            <button type="button" class="color-dot teal" data-wave="teal" title="Muted teal"></button>
+            <button type="button" class="color-dot blue" data-wave="blue" title="Dusty blue"></button>
+            <button type="button" class="color-dot periwinkle" data-wave="periwinkle" title="Periwinkle"></button>
+            <button type="button" class="color-dot mauve" data-wave="mauve" title="Mauve"></button>
+            <button type="button" class="color-dot graphite" data-wave="graphite" title="Graphite"></button>
+          </div>
+        </div>
+        <textarea id="markdownEditor" spellcheck="true" aria-label="Markdown editor"></textarea>
+      </div>
+
+      <aside class="preview-pane">
+        <div class="pane-heading"><div><span>PREVIEW</span><strong>Published appearance</strong></div><button id="clearDraft" class="text-button" type="button">Reset draft</button></div>
+        <article id="markdownPreview" class="markdown-preview"></article>
+      </aside>
+    </section>
+
+    <aside class="publish-note">
+      <strong>How publishing works</strong>
+      <p>This static website cannot write back to GitHub from the browser. Your draft is saved in this browser. Export the Markdown file, put it in <code>blog/posts/</code>, then run <code>./blog/build-blog.sh</code>.</p>
+    </aside>
+  </main>
+  <script src="editor.js"></script>
+</body>
+</html>

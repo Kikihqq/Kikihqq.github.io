@@ -1,6 +1,6 @@
 # Huiqing Zhang — Academic Homepage
 
-A minimalist personal academic homepage in **English**, with a **lotus-purple + misty-blue** scholarly palette on a paper-white background. Single-column, sticky-nav, and entirely static — pure HTML / CSS / JS, no build step, no framework. Push to a GitHub Pages repo and it's online in five minutes.
+A minimalist personal academic homepage with a clean white palette, publications, a compact auto-scrolling Blog showcase, and a local-first Markdown writing studio. The site is static HTML / CSS / JS; Blog pages are generated from Markdown for GitHub Pages.
 
 ---
 
@@ -36,7 +36,9 @@ huiqing-zhang-website/
 ├── blog/
 │   ├── posts/                  ← Markdown 博客源文件（每篇一个 .md）
 │   ├── article-template.html   ← 所有文章共用的 HTML 模板
-│   ├── article.css             ← 所有文章共用的淡粉色主题
+│   ├── editor.html             ← 浏览器内 Markdown 写作与侧栏预览
+│   ├── editor.css / editor.js  ← 编辑器样式、自动存稿、导入和导出
+│   ├── article.css             ← 所有文章共用的白色学术主题
 │   ├── build_blog.py           ← 自动生成文章、Blog 列表和主页最新三篇
 │   └── build-blog.sh           ← 一键构建入口
 └── pubs/                        ← (optional) host your paper PDFs here
@@ -89,7 +91,7 @@ Copy any existing `<article class="pub">…</article>` block and edit the title,
 
 ### Add a blog post
 
-Blog 内容不再直接编辑 HTML。所有文章均由 `blog/posts/` 中的 Markdown 自动生成，并使用同一套淡粉色学术主题。
+Blog 内容不再直接编辑 HTML。可以打开 `blog/editor.html` 写作，也可以直接编辑 `blog/posts/` 中的 Markdown；所有文章使用同一套白色学术主题。
 
 详细步骤见下方“新增 Blog”章节。
 
@@ -138,6 +140,32 @@ Single breakpoint at 760px — the hero stacks, the timeline collapses, publicat
 - 部署：仓库命名为 `Kikihqq.github.io` → push → Settings 里开 Pages → 访问 `https://kikihqq.github.io/`
 
 ---
+
+## 在页面中写 Blog
+
+打开主页 Blog 区域的 **Write a note**，或直接打开 `blog/editor.html`。写作页提供：
+
+- 左侧 Markdown 编辑、右侧实时文章预览。
+- 标题、日期、分类、标签和一句话简介的独立输入项。
+- 粗体、斜体、标题、引用、列表、链接和行内代码工具。
+- 10 种莫兰迪色波浪下划线；选中文字后点击色点即可插入。
+- 浏览器本地自动存稿、导入 `.md`、复制完整 Markdown 和导出 `.md`。
+
+这是静态 GitHub Pages 网站，浏览器无法直接把文章写回仓库。写完后点击 **Export .md**，把下载的文件放入 `blog/posts/`，然后运行：
+
+```bash
+./blog/build-blog.sh
+```
+
+草稿保存在当前浏览器的 `localStorage` 中；更换浏览器或清理网站数据前请先导出。
+
+波浪高亮会写成以下可被 Pandoc 保留的 HTML，发布后的文章主题已经内置相同样式：
+
+```html
+<span class="wave wave-sage">需要强调的内容</span>
+```
+
+可用颜色名：`rose`、`clay`、`ochre`、`sage`、`moss`、`teal`、`blue`、`periwinkle`、`mauve`、`graphite`。
 
 ## 新增 Blog：只需图片和 Markdown
 

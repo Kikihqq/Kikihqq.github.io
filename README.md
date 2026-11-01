@@ -6,7 +6,7 @@ A minimalist personal academic homepage with a clean white palette, publications
 
 ## ✨ Design notes
 
-- **Palette** — paper-white background (`#f7f6fa`, with a barely-perceptible cool cast); lotus purple (`#a594c4` → deep `#7e6aa4`) as the signature accent; misty blue (`#8aa6c2` → `#5e7d9c`) as the secondary. Section title bars are a vertical purple→blue gradient — quiet, but it carries the whole palette in one detail. All colors live as CSS variables at the top of `assets/css/style.css` — change one line, retheme the whole site.
+- **Palette** — a white foundation with restrained highlighter accents: soft pink, cream, warm yellow, pale blue, muted aqua and teal. They appear behind selected keywords, tags, dates and navigation states instead of filling large page areas.
 - **Typography** — *Cormorant Garamond* (delicate serif) for titles and accents; *Inter* for body. Cool, clean, and a touch literary.
 - **Layout** — single column, ~880px max width, sticky translucent top nav, hero with a ⌀200 round portrait beside the name. Sections separated by hairlines. No gimmicks — the structure is pure academic-page.
 
@@ -109,18 +109,17 @@ All colors live as CSS variables at the top of `assets/css/style.css`:
 
 ```css
 :root {
-  --bg:           #f7f6fa;   /* paper-white background */
-  --lotus:        #a594c4;   /* signature lotus purple */
-  --lotus-deep:   #7e6aa4;   /* hover / strong accents */
-  --lotus-soft:   #ece6f4;   /* tags / backgrounds */
-  --mist:         #8aa6c2;   /* secondary misty blue */
-  --mist-deep:    #5e7d9c;
-  --mist-soft:    #e3eaf2;
+  --highlight-pink:   #fae7e8;
+  --highlight-cream:  #f9ebcd;
+  --highlight-yellow: #ffe9a3;
+  --highlight-blue:   #d9edf5;
+  --highlight-teal:   #b9d8da;
+  --highlight-deep:   #94c4c8;
   ...
 }
 ```
 
-Want a warmer feel? Try `--lotus: #c2a8b4` (mauve-pink) and `--mist: #b8a890` (warm taupe). Want crisper academic neutrals? `--lotus: #6b6b8a` (slate-violet) and `--mist: #7d8a9a` (cool grey). Nothing else needs editing.
+这些变量同时控制文本选中颜色、关键词底纹、标签、年份、导航状态和部分交互反馈。
 
 ---
 

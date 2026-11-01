@@ -1,4 +1,7 @@
 body { background: #fff; }
+.blog-entry:nth-child(3n + 1) .blog-entry-kind { background: var(--highlight-pink); border-color: var(--highlight-pink); }
+.blog-entry:nth-child(3n + 2) .blog-entry-kind { background: var(--highlight-cream); border-color: var(--highlight-cream); }
+.blog-entry:nth-child(3n) .blog-entry-kind { background: var(--highlight-blue); border-color: var(--highlight-blue); }
 .blog-index-shell { width: min(1480px, calc(100% - 64px)); margin: 0 auto; padding: 28px 0 80px; }
 .blog-index-header { max-width: 820px; padding: 0 0 30px; border-bottom: 1px solid var(--line); }
 .blog-index-top { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 26px; }

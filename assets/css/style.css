@@ -1,7 +1,7 @@
 /* ==========================================================
    Huiqing Zhang · Academic Homepage
    Style: bold editorial grid, thin ink borders, flat color blocks
-   Palette: dusty pink + sage green + ink, on paper-white
+   Palette: paper white + soft pink, cream, yellow, blue and muted teal
    ========================================================== */
 
 /* ---------- 1. Color tokens ---------- */
@@ -16,19 +16,24 @@
   --line-soft: #f3f3f3;
   --line-strong: var(--ink); /* thin black borders for card/grid blocks */
 
-  /* signature: dusty pink — flat block accent */
-  --lotus:        #64748b;
-  --lotus-deep:   #334155;
-  --lotus-soft:   #f4f5f6;
-  --lotus-glow:   #fafafa;
+  /* reference highlight palette */
+  --highlight-white:  #f4f8fa;
+  --highlight-pink:   #fae7e8;
+  --highlight-cream:  #f9ebcd;
+  --highlight-yellow: #ffe9a3;
+  --highlight-blue:   #d9edf5;
+  --highlight-teal:   #b9d8da;
+  --highlight-deep:   #94c4c8;
 
-  /* secondary: sage green — flat block accent */
-  --mist:         #7b8794;
-  --mist-deep:    #475569;
-  --mist-soft:    #f1f3f5;
-
-  /* neutral flat block, alternates with pink/sage */
-  --sand-soft:  #f7f7f7;
+  /* semantic aliases used throughout the existing site */
+  --lotus:        var(--highlight-deep);
+  --lotus-deep:   #426f75;
+  --lotus-soft:   var(--highlight-pink);
+  --lotus-glow:   var(--highlight-white);
+  --mist:         var(--highlight-teal);
+  --mist-deep:    #557f84;
+  --mist-soft:    var(--highlight-blue);
+  --sand-soft:    var(--highlight-cream);
 
   /* derived */
   --link:      var(--lotus-deep);
@@ -47,6 +52,7 @@
 
 /* ---------- 2. Reset / base ---------- */
 * { box-sizing: border-box; }
+::selection { color: var(--ink); background: var(--highlight-yellow); }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
@@ -71,6 +77,11 @@ a:hover {
 }
 em { color: var(--ink-soft); }
 strong { color: var(--ink); font-weight: 600; }
+mark {
+  padding: 0 .12em;
+  color: inherit;
+  background: linear-gradient(transparent 18%, var(--highlight-yellow) 18%, var(--highlight-yellow) 88%, transparent 88%);
+}
 
 /* ---------- 3. Navigation ---------- */
 .nav {
@@ -128,6 +139,7 @@ strong { color: var(--ink); font-weight: 600; }
 .nav-links a:hover::after,
 .nav-links a.active::after { transform: scaleX(1); }
 .nav-links a.active { color: var(--lotus-deep); }
+.nav-links a.active { background: linear-gradient(transparent 64%, var(--highlight-pink) 64%); }
 
 /* ---------- 4. Hero ---------- */
 .hero {
@@ -329,6 +341,10 @@ strong { color: var(--ink); font-weight: 600; }
 }
 .hero-bio p:last-child { margin-bottom: 0; }
 .hero-bio strong { color: var(--ink); }
+.hero-bio strong {
+  padding: 0 .08em;
+  background: linear-gradient(transparent 62%, var(--highlight-yellow) 62%, var(--highlight-yellow) 92%, transparent 92%);
+}
 
 .hero-collab {
   margin: 16px 0 0;
@@ -368,6 +384,11 @@ strong { color: var(--ink); font-weight: 600; }
   color: #fff;
   transform: translateY(-1px);
 }
+.chip:nth-child(3n + 1) { background: var(--highlight-pink); border-color: var(--highlight-pink); }
+.chip:nth-child(3n + 2) { background: var(--highlight-cream); border-color: var(--highlight-cream); }
+.chip:nth-child(3n) { background: var(--highlight-blue); border-color: var(--highlight-blue); }
+.chip:nth-child(n):hover,
+.chip:nth-child(n):focus-visible { background: var(--highlight-deep); border-color: var(--highlight-deep); color: var(--ink); }
 
 /* ---------- 5. Layout ---------- */
 .container {
@@ -404,8 +425,8 @@ strong { color: var(--ink); font-weight: 600; }
   transform: translateY(-50%);
   width: 6px;
   height: 22px;
-  background: #fff;
-  border: 1.5px solid var(--ink);
+  background: linear-gradient(to bottom, var(--highlight-pink) 0 33%, var(--highlight-yellow) 33% 66%, var(--highlight-deep) 66% 100%);
+  border: 0;
 }
 .section-note {
   margin: -12px 0 18px;
@@ -637,7 +658,7 @@ strong { color: var(--ink); font-weight: 600; }
   color: var(--lotus-deep);
   font-weight: 600;
   text-decoration: underline;
-  text-decoration-color: var(--lotus);
+  text-decoration-color: var(--highlight-deep);
   text-underline-offset: 2px;
 }
 .pub-venue {
@@ -654,7 +675,7 @@ strong { color: var(--ink); font-weight: 600; }
   white-space: nowrap;
   margin-left: 6px;
   padding: 1px 8px;
-  background: var(--surface);
+  background: var(--highlight-yellow);
   color: var(--ink);
   border: 1px solid var(--ink);
   font-size: 0.76rem;
@@ -794,7 +815,7 @@ strong { color: var(--ink); font-weight: 600; }
 .blog-head-actions { display: flex; gap: 20px; padding-bottom: 4px; }
 .blog-head-actions a { color: var(--ink-soft); font-size: .8rem; border-bottom: 1px solid var(--line); }
 .blog-head-actions a:hover { color: var(--ink); border-color: var(--ink); }
-.blog-carousel { overflow: hidden; padding: 18px; background: #f4f4f5; border-radius: 18px; }
+.blog-carousel { overflow: hidden; padding: 18px; background: var(--highlight-white); border-radius: 18px; }
 .blog-list {
   display: flex;
   gap: 14px;
@@ -825,7 +846,7 @@ strong { color: var(--ink); font-weight: 600; }
 }
 .blog-card-pink, .blog-card-sand, .blog-card-sage { background: #fff; }
 .blog-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; }
-.blog-kind { padding: 3px 8px; border: 1px solid var(--line); color: var(--ink-soft); font-size: .67rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.blog-kind { padding: 3px 8px; border: 1px solid var(--highlight-teal); background: var(--highlight-blue); color: var(--ink-soft); font-size: .67rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .blog-card time { color: var(--ink-mute); font-size: .75rem; }
 .blog-date {
   display: block;
@@ -851,7 +872,7 @@ strong { color: var(--ink); font-weight: 600; }
   color: var(--ink-soft);
   line-height: 1.52;
 }
-.blog-card-tags { margin-top: 16px !important; color: var(--ink-mute) !important; font-size: .75rem !important; }
+.blog-card-tags { width: fit-content; margin-top: 16px !important; padding: 2px 7px; background: var(--highlight-cream); color: var(--ink-mute) !important; font-size: .75rem !important; }
 .blog-card-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: auto; padding-top: 18px; }
 .blog-card-actions a { font-size: .78rem; font-weight: 600; color: var(--ink); border-bottom: 1px solid var(--ink); }
 .blog-carousel-controls { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; color: var(--ink-mute); font-size: .72rem; letter-spacing: .08em; }

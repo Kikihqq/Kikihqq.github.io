@@ -74,7 +74,7 @@ def build_post(path: Path) -> dict:
     slug = path.stem
     subprocess.run([
         "pandoc", str(path), "--from=markdown", "--to=html5",
-        "--standalone", "--toc", "--toc-depth=2",
+        "--standalone", "--toc", "--toc-depth=2", "--mathml",
         f"--template={BLOG / 'article-template.html'}",
         f"--output={BLOG / (slug + '.html')}",
     ], check=True)
@@ -88,9 +88,12 @@ def build_post(path: Path) -> dict:
 
 def entry(post: dict) -> str:
     tags = " ".join(f'<span>#{esc(tag)}</span>' for tag in post.get("tags", []))
-    return f'''      <article class="blog-entry">
+    topic = esc(post.get("topic", "General"))
+    year = post["date_sort"].strftime("%Y")
+    return f'''      <article class="blog-entry" data-topic="{topic}" data-year="{year}">
         <div class="blog-entry-rail">
           <span class="blog-entry-kind">{kind(post)}</span>
+          <span class="blog-entry-topic">{topic}</span>
           <time datetime="{esc(post['date'])}">{post['date_sort'].strftime('%b %d, %Y')}</time>
         </div>
         <div class="blog-entry-copy">
@@ -103,18 +106,30 @@ def entry(post: dict) -> str:
 
 
 def card(post: dict, position: int) -> str:
-    tags = " ".join(f"#{esc(tag)}" for tag in post.get("tags", [])[:2])
+    topic = esc(post.get("topic", "General"))
+    date = post["date_sort"]
+    display_date = f"{date.year}-{date.month}-{date.day}"
     return f'''          <article class="blog-card">
-            <div class="blog-card-meta"><span class="blog-kind">{kind(post)}</span><time datetime="{esc(post['date'])}">{post['date_sort'].strftime('%Y.%m.%d')}</time></div>
+            <div class="blog-card-meta"><span class="blog-kind">{topic}</span><time datetime="{esc(post['date'])}">{display_date}</time></div>
             <h3>{esc(post['title'])}</h3>
             <p>{esc(post['description'])}</p>
-            <p class="blog-card-tags">{tags}</p>
             <div class="blog-card-actions">{resource_actions(post, 'blog/')}</div>
           </article>'''
 
 
 def build_index(posts: list[dict]) -> None:
     items = "\n".join(entry(post) for post in posts)
+    requested_topics = ["3DV", "Robotics", "World Model"]
+    extra_topics = sorted({str(post.get("topic", "General")) for post in posts} - set(requested_topics))
+    topic_names = ["All"] + requested_topics + extra_topics
+    topic_buttons = "".join(
+        f'<button type="button" class="filter-button{" active" if topic == "All" else ""}" data-topic-filter="{esc(topic)}">{esc(topic)}</button>'
+        for topic in topic_names
+    )
+    years = sorted({post["date_sort"].strftime("%Y") for post in posts}, reverse=True)
+    year_buttons = '<button type="button" class="filter-button active" data-year-filter="All">All years</button>' + "".join(
+        f'<button type="button" class="filter-button" data-year-filter="{year}">{year}</button>' for year in years
+    )
     page = f'''<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Blog | Huiqing Zhang</title><meta name="description" content="Research notes and paper readings from Huiqing Zhang." />
@@ -122,9 +137,10 @@ def build_index(posts: list[dict]) -> None:
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../assets/css/style.css" /><link rel="stylesheet" href="index.css" /><link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" /></head>
 <body><nav class="nav"><div class="nav-inner"><a href="../index.html#top" class="nav-brand">Huiqing&nbsp;Zhang</a><ul class="nav-links"><li><a href="../index.html#about">About</a></li><li><a href="../index.html#publications">Publications</a></li><li><a href="../cv.html">CV</a></li><li><a href="index.html" class="active">Blog</a></li></ul></div></nav>
-<main class="blog-index-shell"><header class="blog-index-header"><div class="blog-index-top"><a href="../index.html" class="back-link">← Back to home</a><a href="editor.html" class="blog-write-link">Write a note →</a></div><p class="blog-index-eyebrow">NOTES · SLIDES · DOCUMENTS</p><h1>What I am learning.</h1><p>A public notebook for paper readings, technical presentations, and ideas that become clearer through writing.</p></header>
+<main class="blog-index-shell"><header class="blog-index-header"><div class="blog-index-top"><a href="../index.html" class="blog-back-link">Back home</a><div class="blog-tool-links"><a href="mindmap.html" class="blog-map-link">Mind Map</a><a href="editor.html" class="blog-write-link">Write Notes</a></div></div><p class="blog-index-eyebrow">NOTES · SLIDES · DOCUMENTS</p><h1>Blog</h1><p>A public notebook for paper readings, technical presentations, and ideas that become clearer through writing.</p></header>
+<section class="blog-filters" aria-label="Blog filters"><div class="filter-group"><span>Topics</span><div>{topic_buttons}</div></div><div class="filter-group"><span>Archive</span><div>{year_buttons}</div></div></section>
 <section class="blog-feed" aria-label="博客文章">\n{items}\n</section></main>
-<footer class="footer"><p>© <span id="year"></span> Huiqing Zhang. Built with care · Hosted on GitHub Pages.</p></footer><script>document.getElementById('year').textContent = new Date().getFullYear();</script></body></html>'''
+<footer class="footer"><p>© <span id="year"></span> Huiqing Zhang. Built with care · Hosted on GitHub Pages.</p></footer><script>document.getElementById('year').textContent = new Date().getFullYear();</script><script src="index.js"></script></body></html>'''
     (BLOG / "index.html").write_text(page, encoding="utf-8")
 
 

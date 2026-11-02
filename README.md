@@ -37,6 +37,8 @@ huiqing-zhang-website/
 │   ├── posts/                  ← Markdown 博客源文件（每篇一个 .md）
 │   ├── article-template.html   ← 所有文章共用的 HTML 模板
 │   ├── editor.html             ← 浏览器内 Markdown 写作与侧栏预览
+│   ├── mindmap.html            ← 独立可视化思维导图编辑器
+│   ├── mindmap.css / .js       ← 思维导图样式与交互逻辑
 │   ├── editor.css / editor.js  ← 编辑器样式、自动存稿、导入和导出
 │   ├── article.css             ← 所有文章共用的白色学术主题
 │   ├── build_blog.py           ← 自动生成文章、Blog 列表和主页最新三篇
@@ -93,6 +95,8 @@ Copy any existing `<article class="pub">…</article>` block and edit the title,
 
 Blog 内容不再直接编辑 HTML。可以打开 `blog/editor.html` 写作，也可以直接编辑 `blog/posts/` 中的 Markdown；所有文章使用同一套白色学术主题。
 
+思维导图是与 Markdown 编辑器分离的独立工具。可从 Blog 页面的 **Mind Map** 进入 `blog/mindmap.html`。双击画布新增节点，双击节点文字直接编辑，拖动节点调整位置；图标工具栏可以建立连线、自动整理布局、修改单个节点的颜色与形状、切换连线样式，并导出 SVG 或 PNG。内容会自动保存在当前浏览器中。
+
 详细步骤见下方“新增 Blog”章节。
 
 ### Add your CV
@@ -146,8 +150,10 @@ Single breakpoint at 760px — the hero stacks, the timeline collapses, publicat
 
 - 左侧 Markdown 编辑、右侧实时文章预览。
 - 标题、日期、分类、标签和一句话简介的独立输入项。
-- 粗体、斜体、标题、引用、列表、链接和行内代码工具。
-- 10 种莫兰迪色波浪下划线；选中文字后点击色点即可插入。
+- 粗体、斜体、删除线、三级标题、引用、普通/编号/任务列表、链接、图片、分隔线、行内代码与代码块。
+- 6 种参考色卡背景高亮，选中文字后点击色点即可插入。
+- 实线、双线、点线、虚线下划线，以及 10 种莫兰迪色波浪下划线。
+- 右侧同步显示文章标题、日期、分类、简介和 Markdown 正文的最终外观。
 - 浏览器本地自动存稿、导入 `.md`、复制完整 Markdown 和导出 `.md`。
 
 这是静态 GitHub Pages 网站，浏览器无法直接把文章写回仓库。写完后点击 **Export .md**，把下载的文件放入 `blog/posts/`，然后运行：
@@ -204,6 +210,7 @@ date: 2026-07-19
 date-display: 2026 · 07 · 19
 description: 用一句话介绍这篇文章；它会同时显示在主页预览和 Blog 列表中。
 category: RESEARCH NOTES · 04
+topic: 3DV
 format: markdown
 tags: [3D Vision, Paper Reading]
 color: pink
@@ -229,6 +236,7 @@ gallery:
 - `date-display`：文章页中显示的日期格式，可自行修改。
 - `description`：一句话简介，必填；主页和 Blog 列表共用。
 - `category`：标题上方的小分类文字，可选。
+- `topic`：Blog 筛选分类，可使用 `3DV`、`Robotics`、`World Model` 或 `General`。
 - `format`：内容类型，可选 `markdown`、`pdf` 或 `slides`；不填写时默认为 `markdown`。
 - `tags`：Blog 列表中的标签，可选。
 - `color`：主页预览底色，可选 `pink`、`sand` 或 `sage`。

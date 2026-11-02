@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mind Map Studio | Huiqing Zhang</title>
+  <meta name="description" content="A direct-manipulation mind map editor with automatic layout." />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="mindmap.css" />
+  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
+</head>
+<body>
+  <header class="map-header">
+    <div class="map-title-group"><a href="index.html" class="map-back">Back to Blog</a><div><p>VISUAL THINKING TOOL</p><h1>Mind Map Studio</h1></div></div>
+    <div class="map-file-actions"><span id="saveState">New canvas</span><button id="undoMap" class="icon-text-button" type="button" title="Undo">↶</button><button id="redoMap" class="icon-text-button" type="button" title="Redo">↷</button><button id="newMap" class="icon-text-button" type="button">New</button><label class="icon-text-button">Open<input id="openProject" type="file" accept=".json,application/json" hidden /></label><button id="saveProject" class="icon-text-button" type="button">Project</button><button id="exportSvg" class="icon-text-button" type="button">SVG</button><button id="exportPng" class="icon-text-button primary" type="button">PNG</button></div>
+  </header>
+  <main class="map-app">
+    <aside class="map-toolbar" aria-label="Mind map tools">
+      <div class="tool-group"><span>Create</span><button id="addNode" class="tool-button" type="button" title="Add node"><i>＋</i><b>Node</b></button><button id="connectNodes" class="tool-button" type="button" title="Connect two nodes"><i>⌁</i><b>Link</b></button><button id="duplicateNode" class="tool-button" type="button" title="Duplicate selected node"><i>⧉</i><b>Copy</b></button><button id="deleteNode" class="tool-button danger" type="button" title="Delete selected node"><i>×</i><b>Delete</b></button></div>
+      <div class="tool-group"><span>Arrange</span><button class="tool-button layout-button" data-layout="right" type="button" title="Arrange left to right"><i>⇥</i><b>Right</b></button><button class="tool-button layout-button active" data-layout="down" type="button" title="Arrange top to bottom"><i>⇣</i><b>Down</b></button><button class="tool-button layout-button" data-layout="radial" type="button" title="Arrange radially"><i>✺</i><b>Radial</b></button></div>
+      <div class="tool-group"><span>Shape</span><button class="shape-button active" data-shape="round" type="button" title="Rounded rectangle"><i class="shape-round"></i></button><button class="shape-button" data-shape="pill" type="button" title="Pill"><i class="shape-pill"></i></button><button class="shape-button" data-shape="soft" type="button" title="Soft square"><i class="shape-soft"></i></button><button class="shape-button" data-shape="ellipse" type="button" title="Ellipse"><i class="shape-ellipse"></i></button><button class="shape-button" data-shape="diamond" type="button" title="Diamond"><i class="shape-diamond"></i></button><button class="shape-button" data-shape="cloud" type="button" title="Cloud"><i class="shape-cloud">☁</i></button></div>
+      <div class="tool-group"><span>Color</span><button class="swatch pink" data-color="#f6e2e1" type="button" title="Pink"></button><button class="swatch cream" data-color="#f8e9c8" type="button" title="Cream"></button><button class="swatch yellow" data-color="#ffe99a" type="button" title="Yellow"></button><button class="swatch blue" data-color="#d9edf5" type="button" title="Blue"></button><button class="swatch teal" data-color="#b4d5d7" type="button" title="Teal"></button><button class="swatch white" data-color="#ffffff" type="button" title="White"></button></div>
+      <div class="tool-group font-tools"><span>Font · 字体</span><button class="font-button active" data-font="arial" type="button" title="Arial"><i>Arial</i></button><button class="font-button" data-font="helvetica" type="button" title="Helvetica"><i class="helvetica-icon">Helv</i></button><button class="font-button" data-font="georgia" type="button" title="Georgia"><i class="serif-icon">Geo</i></button><button class="font-button" data-font="times" type="button" title="Times New Roman"><i class="times-icon">Times</i></button><button class="font-button" data-font="verdana" type="button" title="Verdana"><i class="verdana-icon">Verd</i></button><button class="font-button" data-font="courier" type="button" title="Courier New"><i class="mono-icon">Code</i></button><button class="font-button" data-font="pingfang" type="button" title="苹方"><i class="pingfang-icon">苹方</i></button><button class="font-button" data-font="yahei" type="button" title="微软雅黑"><i class="yahei-icon">雅黑</i></button><button class="font-button" data-font="songti" type="button" title="宋体"><i class="songti-icon">宋体</i></button><button class="font-button" data-font="kaiti" type="button" title="楷体"><i class="kaiti-icon">楷体</i></button></div>
+      <div class="tool-group size-tools"><span>Size</span><button id="fontSmaller" class="size-step" type="button" title="Decrease font size">A−</button><output id="fontSizeValue">14</output><button id="fontLarger" class="size-step" type="button" title="Increase font size">A＋</button></div>
+      <div class="tool-group"><span>Line</span><button class="line-button active" data-line="curve" type="button" title="Curve"><svg viewBox="0 0 28 18"><path d="M2 15C8 2 20 2 26 15"/></svg></button><button class="line-button" data-line="straight" type="button" title="Straight"><svg viewBox="0 0 28 18"><path d="M2 15L26 3"/></svg></button><button class="line-button" data-line="dashed" type="button" title="Dashed"><svg viewBox="0 0 28 18"><path class="dash" d="M2 9H26"/></svg></button><button class="line-button" data-line="arrow" type="button" title="Arrow"><svg viewBox="0 0 28 18"><path d="M2 9H24M19 4L25 9L19 14"/></svg></button></div>
+      <div class="tool-group zoom-tools"><span>View</span><button id="zoomOut" class="mini-button" type="button">−</button><button id="zoomLabel" class="mini-button wide" type="button">100%</button><button id="zoomIn" class="mini-button" type="button">＋</button><button id="fitMap" class="mini-button wide" type="button">Fit</button></div>
+    </aside>
+    <section class="canvas-shell">
+      <section class="outline-builder" aria-labelledby="outlineTitle">
+        <div class="outline-heading"><div><span>QUICK OUTLINE</span><strong id="outlineTitle">Table to mind map</strong><small>Each row is one level. Rows are read top to bottom; the nearest columns become parent and child.</small></div><div class="outline-actions"><button id="addOutlineRow" type="button">＋ Row ↓</button><button id="addOutlineColumn" type="button">＋ Column →</button><button id="clearOutline" type="button">Clear</button><button id="generateOutline" class="generate-button" type="button">Generate map</button></div></div>
+        <div class="outline-table-wrap"><table id="outlineTable"><thead><tr><th>Node 1</th><th>Node 2</th><th>Node 3</th></tr></thead><tbody><tr><td contenteditable="true" data-placeholder="Top-level topic"></td><td contenteditable="true" data-placeholder="Another root"></td><td contenteditable="true"></td></tr><tr><td contenteditable="true" data-placeholder="Child node"></td><td contenteditable="true" data-placeholder="Sibling node"></td><td contenteditable="true"></td></tr><tr><td contenteditable="true" data-placeholder="Next level"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr></tbody></table></div>
+      </section>
+      <div class="canvas-tip"><strong id="modeLabel">Click text to edit · Hold node to move</strong><span>Drag the lower-right handle to resize · Double-click empty space to add</span></div>
+      <div id="mapViewport" class="map-viewport"><svg id="mapCanvas" role="application" aria-label="Editable mind map canvas"></svg></div>
+      <div class="map-status"><span id="mapStats">0 nodes · 0 links</span><span>Use Project to save editable work · SVG/PNG to export</span></div>
+    </section>
+  </main>
+  <script src="mindmap.js"></script>
+</body>
+</html>

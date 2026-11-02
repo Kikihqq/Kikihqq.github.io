@@ -12,12 +12,13 @@
 <body>
   <header class="studio-header">
     <div>
-      <a class="studio-back" href="index.html">← Back to Blog</a>
+      <a class="studio-back" href="index.html">Back to Blog</a>
       <p class="studio-eyebrow">LOCAL-FIRST WRITING TOOL</p>
       <h1>Markdown Studio</h1>
     </div>
     <div class="studio-actions">
       <span id="saveStatus" class="save-status">Draft saved locally</span>
+      <a class="studio-button secondary" href="mindmap.html">Mind Map</a>
       <label class="studio-button secondary">Import .md<input id="importFile" type="file" accept=".md,text/markdown" hidden /></label>
       <button id="copyMarkdown" class="studio-button secondary" type="button">Copy</button>
       <button id="exportMarkdown" class="studio-button" type="button">Export .md</button>
@@ -29,6 +30,7 @@
       <label>Title<input id="postTitle" type="text" placeholder="Article title" /></label>
       <label>Date<input id="postDate" type="date" /></label>
       <label>Category<input id="postCategory" type="text" placeholder="NOTES · 01" /></label>
+      <label>Topic<select id="postTopic"><option>3DV</option><option>Robotics</option><option>World Model</option><option>General</option></select></label>
       <label>Tags<input id="postTags" type="text" placeholder="3D Vision, Reading Notes" /></label>
       <label class="metadata-wide">One-line summary<input id="postDescription" type="text" placeholder="A short introduction shown on the homepage and Blog index." /></label>
     </section>
@@ -38,17 +40,42 @@
         <div class="pane-heading"><div><span>WRITE</span><strong>Markdown</strong></div><span id="wordCount">0 words · 0 characters</span></div>
         <div class="toolbar" aria-label="Markdown formatting tools">
           <div class="toolbar-group">
+            <span class="color-label">Format</span>
             <button type="button" data-wrap="**|**" title="Bold"><b>B</b></button>
             <button type="button" data-wrap="*|*" title="Italic"><i>I</i></button>
+            <button type="button" data-wrap="~~|~~" title="Strikethrough"><s>S</s></button>
+            <button type="button" data-prefix="# " title="Heading 1">H1</button>
             <button type="button" data-prefix="## " title="Heading 2">H2</button>
             <button type="button" data-prefix="### " title="Heading 3">H3</button>
             <button type="button" data-wrap="`|`" title="Inline code">&lt;/&gt;</button>
+            <button type="button" data-template="\n```\ncode\n```\n" title="Code block">Code block</button>
             <button type="button" data-prefix="> " title="Quote">❞</button>
             <button type="button" data-prefix="- " title="List">• List</button>
+            <button type="button" data-prefix="1. " title="Numbered list">1. List</button>
+            <button type="button" data-prefix="- [ ] " title="Task list">☐ Task</button>
             <button type="button" data-wrap="[|](https://)" title="Link">Link</button>
+            <button type="button" data-wrap="![Image description](|)" title="Image">Image</button>
+            <button type="button" data-insert="\n---\n" title="Horizontal rule">―</button>
+            <button id="formulaToggle" type="button" aria-expanded="false" aria-controls="formulaBuilder" title="展开公式工具">∑ 公式</button>
+          </div>
+          <div class="toolbar-group color-tools" aria-label="Text background highlight colors">
+            <span class="color-label">Highlight</span>
+            <button type="button" class="color-dot soft-pink" data-highlight="pink" title="Pink highlight"></button>
+            <button type="button" class="color-dot cream" data-highlight="cream" title="Cream highlight"></button>
+            <button type="button" class="color-dot yellow" data-highlight="yellow" title="Yellow highlight"></button>
+            <button type="button" class="color-dot pale-blue" data-highlight="blue" title="Blue highlight"></button>
+            <button type="button" class="color-dot soft-teal" data-highlight="teal" title="Teal highlight"></button>
+            <button type="button" class="color-dot deep-teal" data-highlight="deep" title="Deep teal highlight"></button>
+          </div>
+          <div class="toolbar-group underline-tools" aria-label="Underline styles">
+            <span class="color-label">Underline</span>
+            <button type="button" data-underline="solid" title="Solid underline"><u>U</u></button>
+            <button type="button" data-underline="double" title="Double underline" class="double-icon">U</button>
+            <button type="button" data-underline="dotted" title="Dotted underline" class="dotted-icon">U</button>
+            <button type="button" data-underline="dashed" title="Dashed underline" class="dashed-icon">U</button>
           </div>
           <div class="toolbar-group color-tools" aria-label="Morandi wavy underline colors">
-            <span class="color-label">Wavy underline</span>
+            <span class="color-label">Wavy</span>
             <button type="button" class="color-dot rose" data-wave="rose" title="Dusty rose"></button>
             <button type="button" class="color-dot clay" data-wave="clay" title="Clay"></button>
             <button type="button" class="color-dot ochre" data-wave="ochre" title="Ochre"></button>
@@ -61,18 +88,56 @@
             <button type="button" class="color-dot graphite" data-wave="graphite" title="Graphite"></button>
           </div>
         </div>
+        <section id="formulaBuilder" class="formula-builder" aria-labelledby="formulaBuilderTitle" hidden>
+          <div class="formula-builder-heading">
+            <div><span>FORMULA</span><strong id="formulaBuilderTitle">点选符号拼装 Markdown 公式</strong></div>
+            <button id="clearFormula" class="formula-text-button" type="button">清空</button>
+          </div>
+          <div class="formula-symbols" aria-label="常用公式符号">
+            <div class="formula-group"><span>运算</span>
+              <button type="button" data-formula="+">＋</button><button type="button" data-formula="-">−</button><button type="button" data-formula="\times ">×</button><button type="button" data-formula="\div ">÷</button><button type="button" data-formula="=">＝</button><button type="button" data-formula="\neq ">≠</button><button type="button" data-formula="\approx ">≈</button><button type="button" data-formula="\le ">≤</button><button type="button" data-formula="\ge ">≥</button>
+            </div>
+            <div class="formula-group"><span>结构</span>
+              <button type="button" data-formula-template="\frac{|}{}">a⁄b</button><button type="button" data-formula-template="\sqrt{|}">√</button><button type="button" data-formula-template="^{|}">x²</button><button type="button" data-formula-template="_{|}">x₂</button><button type="button" data-formula-template="\left(|\right)">( )</button><button type="button" data-formula-template="\left[|\right]">[ ]</button><button type="button" data-formula-template="\left\{|\right\}">{ }</button>
+            </div>
+            <div class="formula-group"><span>希腊字母</span>
+              <button type="button" data-formula="\alpha ">α</button><button type="button" data-formula="\beta ">β</button><button type="button" data-formula="\gamma ">γ</button><button type="button" data-formula="\delta ">δ</button><button type="button" data-formula="\theta ">θ</button><button type="button" data-formula="\lambda ">λ</button><button type="button" data-formula="\mu ">μ</button><button type="button" data-formula="\pi ">π</button><button type="button" data-formula="\sigma ">σ</button><button type="button" data-formula="\omega ">ω</button>
+            </div>
+            <div class="formula-group"><span>微积分</span>
+              <button type="button" data-formula-template="\sum_{|}^{} ">Σ</button><button type="button" data-formula-template="\prod_{|}^{} ">Π</button><button type="button" data-formula-template="\int_{|}^{} ">∫</button><button type="button" data-formula-template="\lim_{|\to } ">lim</button><button type="button" data-formula="\infty ">∞</button><button type="button" data-formula="\partial ">∂</button><button type="button" data-formula="\nabla ">∇</button>
+            </div>
+            <div class="formula-group"><span>集合</span>
+              <button type="button" data-formula="\in ">∈</button><button type="button" data-formula="\notin ">∉</button><button type="button" data-formula="\subset ">⊂</button><button type="button" data-formula="\cup ">∪</button><button type="button" data-formula="\cap ">∩</button><button type="button" data-formula="\forall ">∀</button><button type="button" data-formula="\exists ">∃</button><button type="button" data-formula="\rightarrow ">→</button>
+            </div>
+          </div>
+          <div class="formula-compose">
+            <label for="formulaInput">LaTeX</label>
+            <textarea id="formulaInput" rows="2" spellcheck="false" placeholder="例如：E = mc^2"></textarea>
+            <output id="formulaMarkdown" aria-label="公式预览" aria-live="polite"></output>
+            <div class="formula-actions">
+              <button id="insertInlineFormula" type="button">插入行内公式</button>
+              <button id="insertBlockFormula" type="button">插入独立公式块</button>
+            </div>
+          </div>
+        </section>
         <textarea id="markdownEditor" spellcheck="true" aria-label="Markdown editor"></textarea>
       </div>
 
       <aside class="preview-pane">
         <div class="pane-heading"><div><span>PREVIEW</span><strong>Published appearance</strong></div><button id="clearDraft" class="text-button" type="button">Reset draft</button></div>
+        <header class="preview-article-header">
+          <p id="previewCategory">NOTES</p>
+          <h1 id="previewTitle">Untitled note</h1>
+          <time id="previewDate"></time>
+          <p id="previewDescription"></p>
+        </header>
         <article id="markdownPreview" class="markdown-preview"></article>
       </aside>
     </section>
 
     <aside class="publish-note">
       <strong>How publishing works</strong>
-      <p>This static website cannot write back to GitHub from the browser. Your draft is saved in this browser. Export the Markdown file, put it in <code>blog/posts/</code>, then run <code>./blog/build-blog.sh</code>.</p>
+      <p>This static website cannot write back to GitHub from the browser. Your draft is saved in this browser. Export the Markdown file to <code>blog/posts/</code>; exported mind maps belong in <code>assets/images/blog/</code>. Then run <code>./blog/build-blog.sh</code>.</p>
     </aside>
   </main>
   <script src="editor.js"></script>

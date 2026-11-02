@@ -32,6 +32,40 @@ const observer = new IntersectionObserver((entries) => {
 }, { rootMargin: '-40% 0px -55% 0px' });
 sections.forEach(s => observer.observe(s));
 
+// A restrained meteor shimmer follows the custom yellow pointer on fine-input devices.
+(function () {
+  if (!window.matchMedia('(pointer: fine)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  let last = 0;
+  let lastX = 0;
+  let lastY = 0;
+  document.addEventListener('pointermove', event => {
+    const now = performance.now();
+    if (now - last < 38) return;
+    if (!lastX && !lastY) {
+      lastX = event.clientX;
+      lastY = event.clientY;
+      last = now;
+      return;
+    }
+    const dx = event.clientX - lastX;
+    const dy = event.clientY - lastY;
+    const length = Math.hypot(dx, dy) || 1;
+    last = now;
+    lastX = event.clientX;
+    lastY = event.clientY;
+    const spark = document.createElement('i');
+    spark.className = 'meteor-spark';
+    spark.textContent = Math.random() > .45 ? '✦' : '★';
+    spark.style.left = `${event.clientX + 14 + (Math.random() * 5 - 2.5)}px`;
+    spark.style.top = `${event.clientY + 17 + (Math.random() * 5 - 2.5)}px`;
+    spark.style.setProperty('--spark-size', `${7 + Math.random() * 5}px`);
+    spark.style.setProperty('--trail-x', `${-(dx / length) * 24}px`);
+    spark.style.setProperty('--trail-y', `${-(dy / length) * 24}px`);
+    document.body.appendChild(spark);
+    spark.addEventListener('animationend', () => spark.remove(), { once: true });
+  }, { passive: true });
+})();
+
 // ==========================================================
 // Photo gallery lightbox — click the stacked photo to open a
 // swipeable, keyboard- and click-navigable gallery.

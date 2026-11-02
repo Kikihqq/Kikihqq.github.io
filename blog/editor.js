@@ -252,6 +252,52 @@ Add links, citations, slides, or a PDF here.`;
     });
   }
 
+  function readFile(file, asDataUrl = false) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error || new Error(`Could not read ${file.name}`));
+      if (asDataUrl) reader.readAsDataURL(file);
+      else reader.readAsText(file);
+    });
+  }
+
+  async function embedLocalImages(source, files) {
+    const images = files.filter(file => file.type.startsWith('image/'));
+    const entries = await Promise.all(images.map(async file => ({
+      name: file.name,
+      path: file.webkitRelativePath || file.name,
+      dataUrl: await readFile(file, true)
+    })));
+    let matched = 0;
+    const embedded = source.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (markdown, alt, rawPath) => {
+      if (/^(?:https?:|data:|blob:)/i.test(rawPath)) return markdown;
+      const cleanPath = decodeURIComponent(rawPath.split(/[?#]/)[0]).replace(/^\.\//, '');
+      const basename = cleanPath.split('/').pop();
+      const image = entries.find(entry => entry.path.endsWith(cleanPath) || entry.name === basename);
+      if (!image) return markdown;
+      matched += 1;
+      return `![${alt}](${image.dataUrl})`;
+    });
+    return { source: embedded, matched, entries };
+  }
+
+  function loadMarkdownSource(source) {
+    const match = source.match(/^---\n([\s\S]*?)\n---\n?/);
+    if (match) {
+      const meta = {};
+      match[1].split('\n').forEach(line => { const i = line.indexOf(':'); if (i > -1) meta[line.slice(0, i).trim()] = line.slice(i + 1).trim(); });
+      $('postTitle').value = meta.title || '';
+      $('postDate').value = meta.date || '';
+      $('postDescription').value = meta.description || '';
+      $('postCategory').value = meta.category || '';
+      $('postTopic').value = meta.topic || 'General';
+      $('postTags').value = (meta.tags || '').replace(/^\[|\]$/g, '');
+      editor.value = source.slice(match[0].length).trim();
+    } else editor.value = source;
+    update();
+  }
+
   document.querySelectorAll('[data-wrap]').forEach(button => button.addEventListener('click', () => {
     const [before, after] = button.dataset.wrap.split('|');
     insert(before, after);
@@ -377,27 +423,42 @@ Add links, citations, slides, or a PDF here.`;
     await navigator.clipboard.writeText(completeMarkdown());
     $('saveStatus').textContent = 'Markdown copied';
   });
-  $('importFile').addEventListener('change', event => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const source = String(reader.result);
-      const match = source.match(/^---\n([\s\S]*?)\n---\n?/);
-      if (match) {
-        const meta = {};
-        match[1].split('\n').forEach(line => { const i = line.indexOf(':'); if (i > -1) meta[line.slice(0, i).trim()] = line.slice(i + 1).trim(); });
-        $('postTitle').value = meta.title || '';
-        $('postDate').value = meta.date || '';
-        $('postDescription').value = meta.description || '';
-        $('postCategory').value = meta.category || '';
-        $('postTopic').value = meta.topic || 'General';
-        $('postTags').value = (meta.tags || '').replace(/^\[|\]$/g, '');
-        editor.value = source.slice(match[0].length).trim();
-      } else editor.value = source;
+  $('importFile').addEventListener('change', async event => {
+    const files = [...event.target.files];
+    const markdownFile = files.find(file => file.type === 'text/markdown' || /\.md$/i.test(file.name));
+    if (!markdownFile) { $('saveStatus').textContent = 'Please select one Markdown file'; return; }
+    try {
+      const source = await readFile(markdownFile);
+      const result = await embedLocalImages(source, files);
+      loadMarkdownSource(result.source);
+      const imageCount = files.filter(file => file.type.startsWith('image/')).length;
+      $('saveStatus').textContent = imageCount
+        ? `Markdown imported · ${result.matched}/${imageCount} image references embedded`
+        : 'Markdown imported · select its images together to preview local paths';
+    } catch (error) {
+      $('saveStatus').textContent = 'Could not import these files';
+    }
+    event.target.value = '';
+  });
+  $('imageFiles').addEventListener('change', async event => {
+    const files = [...event.target.files];
+    if (!files.length) return;
+    try {
+      const result = await embedLocalImages(editor.value, files);
+      editor.value = result.source;
+      if (!result.matched) {
+        const start = editor.selectionStart;
+        const markdown = result.entries.map(image => `![${image.name}](${image.dataUrl})`).join('\n\n');
+        editor.setRangeText(`\n\n${markdown}\n\n`, start, editor.selectionEnd, 'end');
+      }
       update();
-    };
-    reader.readAsText(file);
+      $('saveStatus').textContent = result.matched
+        ? `${result.matched} local image reference(s) embedded`
+        : `${result.entries.length} image(s) added to the article`;
+    } catch (error) {
+      $('saveStatus').textContent = 'Could not add these images';
+    }
+    event.target.value = '';
   });
   $('clearDraft').addEventListener('click', () => {
     if (!window.confirm('Reset this local draft?')) return;

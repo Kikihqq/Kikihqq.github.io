@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Markdown Studio | Huiqing Zhang</title>
   <meta name="description" content="A local-first Markdown writing studio for Huiqing Zhang's blog." />
-  <link rel="stylesheet" href="../assets/css/style.css" />
-  <link rel="stylesheet" href="editor.css" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261102-2" />
+  <link rel="stylesheet" href="editor.css?v=20261102-2" />
   <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
 </head>
 <body>
@@ -19,7 +19,8 @@
     <div class="studio-actions">
       <span id="saveStatus" class="save-status">Draft saved locally</span>
       <a class="studio-button secondary" href="mindmap.html">Mind Map</a>
-      <label class="studio-button secondary">Import .md<input id="importFile" type="file" accept=".md,text/markdown" hidden /></label>
+      <label class="studio-button secondary">Import .md + images<input id="importFile" type="file" accept=".md,text/markdown,image/*" multiple hidden /></label>
+      <label class="studio-button secondary">Add images<input id="imageFiles" type="file" accept="image/*" multiple hidden /></label>
       <button id="copyMarkdown" class="studio-button secondary" type="button">Copy</button>
       <button id="exportMarkdown" class="studio-button" type="button">Export .md</button>
     </div>
@@ -137,9 +138,9 @@
 
     <aside class="publish-note">
       <strong>How publishing works</strong>
-      <p>This static website cannot write back to GitHub from the browser. Your draft is saved in this browser. Export the Markdown file to <code>blog/posts/</code>; exported mind maps belong in <code>assets/images/blog/</code>. Then run <code>./blog/build-blog.sh</code>.</p>
+      <p>Select the Markdown file and its referenced images together with <strong>Import .md + images</strong>; local image paths will be embedded so they preview and remain inside the exported Markdown. Save the exported file to <code>blog/posts/</code>, then run <code>./blog/build-blog.sh</code>.</p>
     </aside>
   </main>
-  <script src="editor.js"></script>
+  <script src="editor.js?v=20261102-2"></script>
 </body>
 </html>

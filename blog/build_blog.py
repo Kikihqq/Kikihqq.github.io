@@ -135,12 +135,12 @@ def build_index(posts: list[dict]) -> None:
 <title>Blog | Huiqing Zhang</title><meta name="description" content="Research notes and paper readings from Huiqing Zhang." />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="../assets/css/style.css" /><link rel="stylesheet" href="index.css" /><link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" /></head>
+<link rel="stylesheet" href="../assets/css/style.css?v=20261102-2" /><link rel="stylesheet" href="index.css?v=20261102-2" /><link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" /></head>
 <body><nav class="nav"><div class="nav-inner"><a href="../index.html#top" class="nav-brand">Huiqing&nbsp;Zhang</a><ul class="nav-links"><li><a href="../index.html#about">About</a></li><li><a href="../index.html#publications">Publications</a></li><li><a href="../cv.html">CV</a></li><li><a href="index.html" class="active">Blog</a></li></ul></div></nav>
 <main class="blog-index-shell"><header class="blog-index-header"><div class="blog-index-top"><a href="../index.html" class="blog-back-link">Back home</a><div class="blog-tool-links"><a href="mindmap.html" class="blog-map-link">Mind Map</a><a href="editor.html" class="blog-write-link">Write Notes</a></div></div><p class="blog-index-eyebrow">NOTES · SLIDES · DOCUMENTS</p><h1>Blog</h1><p>A public notebook for paper readings, technical presentations, and ideas that become clearer through writing.</p></header>
 <section class="blog-filters" aria-label="Blog filters"><div class="filter-group"><span>Topics</span><div>{topic_buttons}</div></div><div class="filter-group"><span>Archive</span><div>{year_buttons}</div></div></section>
 <section class="blog-feed" aria-label="博客文章">\n{items}\n</section></main>
-<footer class="footer"><p>© <span id="year"></span> Huiqing Zhang. Built with care · Hosted on GitHub Pages.</p></footer><script>document.getElementById('year').textContent = new Date().getFullYear();</script><script src="index.js"></script></body></html>'''
+<footer class="footer"><p>© <span id="year"></span> Huiqing Zhang. Built with care · Hosted on GitHub Pages.</p></footer><script>document.getElementById('year').textContent = new Date().getFullYear();</script><script src="index.js?v=20261102-2"></script></body></html>'''
     (BLOG / "index.html").write_text(page, encoding="utf-8")
 
 

@@ -8,25 +8,31 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/style.css?v=20261102-2" />
-  <link rel="stylesheet" href="article.css?v=20261102-2" />
-  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
+  <link rel="stylesheet" href="$site-root$assets/css/style.css?v=20261102-2" />
+  <link rel="stylesheet" href="$blog-root$article.css?v=20261125-3" />
+$if(interactive)$
+  <link rel="stylesheet" href="$blog-root$assets/explainers.css?v=20261104-2" />
+$endif$
+  <link rel="icon" type="image/svg+xml" href="$site-root$assets/images/favicon.svg" />
 </head>
 <body data-topic="$if(topic)$$topic$$else$General$endif$">
   <nav class="nav">
     <div class="nav-inner">
-      <a href="../index.html#top" class="nav-brand">Huiqing&nbsp;Zhang</a>
+      <a href="$site-root$index.html#top" class="nav-brand">Huiqing&nbsp;Zhang</a>
       <ul class="nav-links">
-        <li><a href="../index.html#about">About</a></li>
-        <li><a href="../index.html#publications">Publications</a></li>
-        <li><a href="../cv.html">CV</a></li>
-        <li><a href="index.html" class="active">Blog</a></li>
+        <li><a href="$site-root$index.html#about">About</a></li>
+        <li><a href="$site-root$index.html#publications">Publications</a></li>
+        <li><a href="$site-root$cv.html">CV</a></li>
+        <li><a href="$blog-root$index.html" class="active">Blog</a></li>
       </ul>
     </div>
   </nav>
 
   <main class="article-shell">
-    <a href="index.html" class="back-link">← 返回全部文章</a>
+    <div class="article-topbar">
+      <a href="$blog-root$index.html" class="back-link">← 返回全部文章</a>
+      $if(original-url)$<a class="original-notes-link" href="$original-url$" target="_blank" rel="noopener">初始笔记 ↗</a>$endif$
+    </div>
     <header class="article-header">
       <p class="article-kicker">$if(category)$$category$$else$RESEARCH NOTES$endif$</p>
       <h1>$title$</h1>
@@ -83,6 +89,9 @@ $body$
 
   <footer class="footer"><p>© <span id="year"></span> Huiqing Zhang.</p></footer>
   <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-  <script src="article-gallery.js?v=20261102-2"></script>
+  <script src="$blog-root$article-gallery.js?v=20261102-2"></script>
+$if(interactive)$
+  <script src="$blog-root$assets/explainers.js?v=20261104-1" defer></script>
+$endif$
 </body>
 </html>

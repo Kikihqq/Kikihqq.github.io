@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="InfiniSplat 单图前馈三维高斯泼溅学习笔记。" />
+  <title>InfiniSplatV1：面向大基线单目新视角合成的隐式高斯解码 — Huiqing Zhang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../../assets/css/style.css?v=20261102-2" />
+  <link rel="stylesheet" href="../../article.css?v=20261125-3" />
+  <link rel="icon" type="image/svg+xml" href="../../../assets/images/favicon.svg" />
+</head>
+<body data-topic="3DV">
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../../../index.html#top" class="nav-brand">Huiqing&nbsp;Zhang</a>
+      <ul class="nav-links">
+        <li><a href="../../../index.html#about">About</a></li>
+        <li><a href="../../../index.html#publications">Publications</a></li>
+        <li><a href="../../../cv.html">CV</a></li>
+        <li><a href="../../index.html" class="active">Blog</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="article-shell">
+    <div class="article-topbar">
+      <a href="../../index.html" class="back-link">← 返回全部文章</a>
+
+    </div>
+    <header class="article-header">
+      <p class="article-kicker">PAPER NOTES</p>
+      <h1>InfiniSplatV1：面向大基线单目新视角合成的隐式高斯解码</h1>
+      <time class="article-date" datetime="2026-10-19">2026-10-19</time>
+      <p class="article-deck">InfiniSplat 单图前馈三维高斯泼溅学习笔记。</p>
+          </header>
+
+
+
+    <div class="article-layout">
+      <aside class="article-sidebar" aria-label="文章目录">
+        <p class="article-sidebar-label">CONTENTS</p>
+                <ul>
+                <li><a href="#摘要">1. 摘要</a></li>
+                <li><a href="#核心insight">2. 核心insight</a></li>
+                <li><a href="#dgs基础和基线">3. 3DGS基础和基线</a>
+                <ul>
+                <li><a href="#高斯的协方差矩阵">3.1 高斯的协方差矩阵</a></li>
+                <li><a href="#dgs如何渲染">3.2 3DGS如何渲染</a></li>
+                <li><a href="#为什么之前的单图前馈3dgs喜欢pixel-aligned-prediction">3.3 为什么之前的单图前馈3DGS喜欢pixel-aligned prediction?</a></li>
+                <li><a href="#大基线和小基线">3.4 大基线和小基线</a></li>
+                <li><a href="#四类错误">3.5 四类错误</a></li>
+                </ul></li>
+                <li><a href="#infinisplat">4. InfiniSplat</a>
+                <ul>
+                <li><a href="#重要的几何直觉同样一个像素对应的三维表面积不同">4.1 重要的几何直觉：同样一个像素，对应的三维表面积不同</a></li>
+                <li><a href="#为什么深度不连续处要删除三角形">4.2 为什么深度不连续处要删除三角形？</a></li>
+                <li><a href="#支撑点是什么和高斯中心的区别">4.3 支撑点是什么？和高斯中心的区别？</a></li>
+                <li><a href="#什么叫锚定于几何">4.4 什么叫“锚定于几何”？</a></li>
+                <li><a href="#为什么改成-irregular-support-后就需要-implicit-decoder">4.5 为什么改成 irregular support 后，就需要 implicit decoder？</a></li>
+                <li><a href="#dino-分支到底在做什么">4.6 DINO 分支到底在做什么？</a></li>
+                <li><a href="#cnn-分支为什么仍然需要">4.7 CNN 分支为什么仍然需要？</a></li>
+                <li><a href="#为什么不用直接拼接-dino-和-cnn而要-gated-fusion">4.8 为什么不用直接拼接 DINO 和 CNN，而要 gated fusion？</a></li>
+                <li><a href="#为什么不直接预测三维偏移-delta-xinmathbb-r3">4.9 为什么不直接预测三维偏移 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>X</mi><mo>∈</mo><msup><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mn>3</mn></msup></mrow><annotation encoding="application/x-tex">\Delta X\in\mathbb R^3</annotation></semantics></math>？</a></li>
+                <li><a href="#为什么颜色opacityscale-要在-inverse-activation-space-更新">4.10 为什么颜色、opacity、scale 要在 inverse-activation space 更新？</a></li>
+                <li><a href="#为什么需要-gaussian-regularization">4.11 为什么需要 Gaussian regularization？</a></li>
+                <li><a href="#infinisplat-到底有没有真正恢复完整三维场景">4.12 InfiniSplat 到底有没有真正“恢复完整三维场景”？</a></li>
+                <li><a href="#为什么-hypersim-训练可以泛化到真实场景">4.13 为什么 Hypersim 训练可以泛化到真实场景？</a></li>
+                </ul></li>
+                <li><a href="#从信息流角度重新理解-infinisplat">5. 从信息流角度重新理解 InfiniSplat</a></li>
+                <li><a href="#公式与数学原理">6. 公式与数学原理</a>
+                <ul>
+                <li><a href="#相机模型与反投影公式">6.1 相机模型与反投影公式</a></li>
+                <li><a href="#为什么三角形面积用叉乘">6.2 为什么三角形面积用叉乘？</a></li>
+                <li><a href="#为什么面积权重可以近似表面采样密度需求">6.3 为什么面积权重可以近似“表面采样密度需求”？</a></li>
+                <li><a href="#如何在二维三角形内部均匀采样">6.4 如何在二维三角形内部均匀采样？</a></li>
+                <li><a href="#双线性插值bilinear-sampling到底怎么算">6.5 双线性插值（Bilinear Sampling）到底怎么算？</a></li>
+                <li><a href="#门控融合的数学解释">6.6 门控融合的数学解释</a></li>
+                <li><a href="#为什么高斯更新输出正好-14-维">6.7 为什么高斯更新输出正好 14 维？</a></li>
+                <li><a href="#四元数quaternion为什么用-4-维表示旋转">6.8 四元数（Quaternion）为什么用 4 维表示旋转？</a></li>
+                <li><a href="#为什么-scale-用-log-space">6.9 为什么 scale 用 log-space？</a></li>
+                <li><a href="#scale-regularization-是怎样工作的">6.10 Scale regularization 是怎样工作的？</a></li>
+                <li><a href="#local-smoothness-正则到底在鼓励什么">6.11 Local smoothness 正则到底在鼓励什么？</a></li>
+                <li><a href="#感知损失中的-vgg-feature-loss">6.12 感知损失中的 VGG feature loss</a></li>
+                <li><a href="#gram-matrix-是什么为什么能约束纹理">6.13 Gram matrix 是什么？为什么能约束纹理？</a></li>
+                <li><a href="#psnr-的数学意义">6.14 PSNR 的数学意义</a></li>
+                <li><a href="#ssim-与-lpips-分别看什么">6.15 SSIM 与 LPIPS 分别看什么？</a></li>
+                </ul></li>
+                <li><a href="#总结">7. 总结</a></li>
+                <li><a href="#论文写作学习">8. 论文写作学习</a></li>
+                </ul>
+              </aside>
+      <article class="article-content">
+<figure>
+<img src="assets/figure-01.png" alt="image-20261125101625539" /><figcaption aria-hidden="true">image-20261125101625539</figcaption>
+</figure>
+<h2 id="摘要">1. 摘要</h2>
+<p>单图前馈三维高斯泼溅的目标，是仅从一张输入图像直接生成一个可渲染的三维场景表示，从而避免多视图采集以及<strong>针对每个场景</strong>进行优化（per-scene optimization）的开销。然而，现有方法通常受到<strong>像素对齐表示</strong>（pixel-aligned representation）的限制：它们从<strong>固定图像网格位置</strong>预测高斯原语（Gaussian primitives）。这种像素对齐的原语在输入视角附近能够生成令人满意的渲染结果，但它们与真实场景表面的耦合较弱，因此当视点发生较大变化时，难以维持连贯一致的结构。</p>
+<p>本文提出 <strong>InfiniSplat</strong>，一种前馈式单图 3DGS 框架，其目标是将表示方式从<strong>像素对齐</strong>（pixel-aligned）推进到<strong>表面对齐</strong>（surface-aligned）。InfiniSplat 首先使用<strong>几何引导采样</strong>（geometry-guided sampling），依据深度所诱导的局部表面结构来放置二维支撑点（2D supports）；随后使用<strong>查询条件隐式解码器（query-conditioned implicit decoder）</strong>，在这些支撑位置查询图像特征，并据此预测高斯属性。</p>
+<p>通过让支撑位置落在几何结构上，同时将高斯预测从固定像素中心中解耦，InfiniSplat 能够生成更加遵循真实场景表面的高斯布局，并减少由规则网格离散化（grid discretization）造成的散乱高斯原语。在多个跨数据集（cross-dataset）的新视图合成评测中，InfiniSplat 相较于现有单图前馈基线取得了最先进的结果，并展示出从 Hypersim 室内合成训练数据零样本泛化（zero-shot generalization）到复杂开放世界场景的能力。</p>
+<figure>
+<img src="assets/figure-02.png" alt="image-20261125111649891" /><figcaption aria-hidden="true">image-20261125111649891</figcaption>
+</figure>
+<h2 id="核心insight">2. 核心insight</h2>
+<p>InfiniSplat 将单图前馈 3DGS 从“逐像素回归（per-pixel regression）”重新参数化为“在几何自适应支撑上的连续查询式高斯场（query-conditioned Gaussian field）”。</p>
+<h2 id="dgs基础和基线">3. 3DGS基础和基线</h2>
+<p>一个三维高斯可以理解成空间中的一个“有方向、有大小、有颜色、有透明度的椭球小云团”。</p>
+<p>第 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math> 个高斯通常包含：</p>
+<p><span class="numbered-equation" id="equation-1"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>g</mi><mi>i</mi></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>μ</mi><mi>i</mi></msub><mo>,</mo><msub><mi>s</mi><mi>i</mi></msub><mo>,</mo><msub><mi>r</mi><mi>i</mi></msub><mo>,</mo><msub><mi>c</mi><mi>i</mi></msub><mo>,</mo><msub><mi>α</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+g_i=(\mu_i,s_i,r_i,c_i,\alpha_i).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 1">(1)</span></span></p>
+<p>分别表示：</p>
+<ul>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mi>i</mi></msub><mo>∈</mo><msup><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mn>3</mn></msup></mrow><annotation encoding="application/x-tex">\mu_i\in\mathbb R^3</annotation></semantics></math>：三维中心；</li>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mi>i</mi></msub><mo>∈</mo><msup><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mn>3</mn></msup></mrow><annotation encoding="application/x-tex">s_i\in\mathbb R^3</annotation></semantics></math>：三个主轴方向上的尺度；</li>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>r</mi><mi>i</mi></msub><annotation encoding="application/x-tex">r_i</annotation></semantics></math>：旋转，一般用四元数（quaternion）表示；</li>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>c</mi><mi>i</mi></msub><annotation encoding="application/x-tex">c_i</annotation></semantics></math>：颜色或球谐系数（Spherical Harmonics, SH）；</li>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math>：不透明度。</li>
+</ul>
+<h3 id="高斯的协方差矩阵">3.1 高斯的协方差矩阵</h3>
+<p>三维 Gaussian 的形状可以写成协方差矩阵：</p>
+<p><span class="numbered-equation" id="equation-2"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Σ</mi><mi>i</mi></msub><mo>=</mo><msub><mi>R</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">[</mo><mtable><mtr><mtd columnalign="center"><msubsup><mi>s</mi><mrow><mi>i</mi><mo>,</mo><mi>x</mi></mrow><mn>2</mn></msubsup></mtd><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><mn>0</mn></mtd></mtr><mtr><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><msubsup><mi>s</mi><mrow><mi>i</mi><mo>,</mo><mi>y</mi></mrow><mn>2</mn></msubsup></mtd><mtd columnalign="center"><mn>0</mn></mtd></mtr><mtr><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><msubsup><mi>s</mi><mrow><mi>i</mi><mo>,</mo><mi>z</mi></mrow><mn>2</mn></msubsup></mtd></mtr></mtable><mo stretchy="true" form="postfix">]</mo></mrow><msubsup><mi>R</mi><mi>i</mi><mi>T</mi></msubsup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\Sigma_i
+=
+R_i
+\begin{bmatrix}
+s_{i,x}^2&amp;0&amp;0\\
+0&amp;s_{i,y}^2&amp;0\\
+0&amp;0&amp;s_{i,z}^2
+\end{bmatrix}
+R_i^T.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 2">(2)</span></span></p>
+<p>其中 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mi>i</mi></msub><annotation encoding="application/x-tex">R_i</annotation></semantics></math> 由四元数 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>r</mi><mi>i</mi></msub><annotation encoding="application/x-tex">r_i</annotation></semantics></math> 转换得到。</p>
+<p>如果：</p>
+<p><span class="numbered-equation" id="equation-3"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mi>x</mi></msub><mo>=</mo><msub><mi>s</mi><mi>y</mi></msub><mo>=</mo><msub><mi>s</mi><mi>z</mi></msub><mo>,</mo></mrow><annotation encoding="application/x-tex">
+s_x=s_y=s_z,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 3">(3)</span></span></p>
+<p>高斯就是球形；</p>
+<p>如果：</p>
+<p><span class="numbered-equation" id="equation-4"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mi>z</mi></msub><mo>≪</mo><msub><mi>s</mi><mi>x</mi></msub><mo>,</mo><msub><mi>s</mi><mi>y</mi></msub><mo>,</mo></mrow><annotation encoding="application/x-tex">
+s_z\ll s_x,s_y,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 4">(4)</span></span></p>
+<p>它就是一个很薄的椭圆片，比较像局部表面片。</p>
+<p>因此，如果 3DGS 真正学到了场景表面，一个常见现象是高斯会变得像许多小“薄片”，共同覆盖真实表面。</p>
+<h3 id="dgs如何渲染">3.2 3DGS如何渲染</h3>
+<p>三维 Gaussian 被投影到目标相机后，变成二维椭圆 Gaussian。</p>
+<p>设投影函数为：</p>
+<p><span class="numbered-equation" id="equation-5"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>u</mi><mo>=</mo><mi>π</mi><mo stretchy="false" form="prefix">(</mo><mi>X</mi><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+u=\pi(X).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 5">(5)</span></span></p>
+<p>在高斯中心附近线性化投影，使用投影 Jacobian：</p>
+<p><span class="numbered-equation" id="equation-6"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>J</mi><mo>=</mo><mfrac><mrow><mi>∂</mi><mi>π</mi></mrow><mrow><mi>∂</mi><mi>X</mi></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+J=\frac{\partial\pi}{\partial X}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 6">(6)</span></span></p>
+<p>则三维协方差近似投影为二维协方差：</p>
+<p><span class="numbered-equation" id="equation-7"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Σ</mi><mrow><mn>2</mn><mi>D</mi></mrow></msub><mo>≈</mo><mi>J</mi><msub><mi>Σ</mi><mrow><mn>3</mn><mi>D</mi></mrow></msub><msup><mi>J</mi><mi>T</mi></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\Sigma_{2D}
+\approx
+J\Sigma_{3D}J^T.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 7">(7)</span></span></p>
+<p>之后，高斯会在屏幕空间“splat”成一个椭圆区域。</p>
+<p>多个高斯按照深度排序后进行 alpha compositing（透明度累积）：</p>
+<p><span class="numbered-equation" id="equation-8"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>T</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><msub><mi>α</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><msub><mi>c</mi><mi>i</mi></msub><mo>,</mo></mrow><annotation encoding="application/x-tex">
+C(p)
+=
+\sum_i T_i(p)\alpha_i(p)c_i,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 8">(8)</span></span></p>
+<p>其中：</p>
+<p><span class="numbered-equation" id="equation-9"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>T</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><munder><mo>∏</mo><mrow><mi>j</mi><mo>&lt;</mo><mi>i</mi></mrow></munder><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>α</mi><mi>j</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+T_i(p)=\prod_{j&lt;i}(1-\alpha_j(p)).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 9">(9)</span></span></p>
+<p>直觉上：</p>
+<ul>
+<li>前面的 Gaussian 先贡献颜色；</li>
+<li>越被前面遮挡，后面高斯的透射权重越小。</li>
+</ul>
+<p>这就是为什么 3DGS 可以实时渲染。</p>
+<h3 id="为什么之前的单图前馈3dgs喜欢pixel-aligned-prediction">3.3 为什么之前的单图前馈3DGS喜欢pixel-aligned prediction?</h3>
+<p>因为卷积网络和 Vision Transformer 的特征本来就定义在二维图像网格上。</p>
+<p>最简单的设计是：</p>
+<p><span class="numbered-equation" id="equation-10"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mo>∈</mo><msup><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mrow><mi>H</mi><mi>′</mi><mo>×</mo><mi>W</mi><mi>′</mi><mo>×</mo><mi>C</mi></mrow></msup></mrow><annotation encoding="application/x-tex">
+F\in\mathbb R^{H&#39;\times W&#39;\times C}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 10">(10)</span></span></p>
+<p>然后对每一个网格位置 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(x,y)</annotation></semantics></math> 输出：</p>
+<p><span class="numbered-equation" id="equation-11"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mi>μ</mi><mo>,</mo><mi>s</mi><mo>,</mo><mi>r</mi><mo>,</mo><mi>c</mi><mo>,</mo><mi>α</mi><mo stretchy="false" form="postfix">]</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+[\mu,s,r,c,\alpha].
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 11">(11)</span></span></p>
+<p>也就是说：</p>
+<pre class="text"><code>image pixel / feature pixel
+         ↓
+       Gaussian</code></pre>
+<p>这个方案有三个优点：</p>
+<ol type="1">
+<li>实现简单；</li>
+<li>GPU 上非常适合 dense tensor；</li>
+<li>每个输出位置天然对应输入图像上的局部区域。</li>
+</ol>
+<p>但它有一个根本缺陷：</p>
+<blockquote>
+<p><strong>二维图像网格的规则性是相机成像坐标系的规则性，不是三维场景表面的规则性。</strong></p>
+</blockquote>
+<p>InfiniSplat 就是从这一点切入。</p>
+<h3 id="大基线和小基线">3.4 大基线和小基线</h3>
+<figure>
+<img src="assets/figure-03.png" alt="小基线 Gaussian 与表面对齐原理图" /><figcaption aria-hidden="true">小基线 Gaussian 与表面对齐原理图</figcaption>
+</figure>
+<p>传统双目/多视图几何里，我们通常说：</p>
+<p><span class="numbered-equation" id="equation-12"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">baseline</mtext><mo>=</mo><mo stretchy="false" form="postfix">∥</mo><msub><mstyle mathvariant="bold"><mi>𝐂</mi></mstyle><mn>1</mn></msub><mo>−</mo><msub><mstyle mathvariant="bold"><mi>𝐂</mi></mstyle><mn>2</mn></msub><mo stretchy="false" form="postfix">∥</mo></mrow><annotation encoding="application/x-tex">
+\text{baseline}=\|\mathbf C_1-\mathbf C_2\|
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 12">(12)</span></span></p>
+<p>即两个<strong>真实拍摄相机中心</strong>之间的距离。</p>
+<p>比如你做结构恢复（SfM）：</p>
+<p><span class="numbered-equation" id="equation-13"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>I</mi><mn>1</mn></msub><mo>,</mo><msub><mi>I</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">
+I_1,I_2
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 13">(13)</span></span></p>
+<p>分别由相机 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mn>1</mn></msub><mo>,</mo><msub><mi>C</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">C_1,C_2</annotation></semantics></math> 拍摄，那么：</p>
+<p><span class="numbered-equation" id="equation-14"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi><mo>=</mo><mo stretchy="false" form="postfix">∥</mo><msub><mi>C</mi><mn>1</mn></msub><mo>−</mo><msub><mi>C</mi><mn>2</mn></msub><mo stretchy="false" form="postfix">∥</mo></mrow><annotation encoding="application/x-tex">
+B=\|C_1-C_2\|
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 14">(14)</span></span></p>
+<p>这时候确实至少需要两张输入图像，才能谈“输入图像之间的基线”。</p>
+<p>但是 InfiniSplat 是<strong>单图像新视角合成（single-image novel view synthesis）</strong>。它说的 baseline 是：</p>
+<p><span class="numbered-equation" id="equation-15"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><menclose notation="box"><mrow><msub><mi>B</mi><mtext mathvariant="normal">NVS</mtext></msub><mo>=</mo><mo stretchy="false" form="postfix">∥</mo><msub><mstyle mathvariant="bold"><mi>𝐂</mi></mstyle><mtext mathvariant="normal">target</mtext></msub><mo>−</mo><msub><mstyle mathvariant="bold"><mi>𝐂</mi></mstyle><mtext mathvariant="normal">source</mtext></msub><mo stretchy="false" form="postfix">∥</mo></mrow></menclose><annotation encoding="application/x-tex">
+\boxed{
+B_{\text{NVS}}
+=
+\|\mathbf C_{\text{target}}-\mathbf C_{\text{source}}\|
+}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 15">(15)</span></span></p>
+<p>其中：</p>
+<ul>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="bold"><mi>𝐂</mi></mstyle><mtext mathvariant="normal">source</mtext></msub><annotation encoding="application/x-tex">\mathbf C_{\text{source}}</annotation></semantics></math>：唯一输入图片对应的真实相机；</li>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="bold"><mi>𝐂</mi></mstyle><mtext mathvariant="normal">target</mtext></msub><annotation encoding="application/x-tex">\mathbf C_{\text{target}}</annotation></semantics></math>：你希望从哪里看这个场景，也就是<strong>虚拟的新视角相机</strong>。</li>
+</ul>
+<p>给定单张图像 InfiniSplat 根据它预测一个三维高斯场景：</p>
+<p><span class="numbered-equation" id="equation-16"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>I</mi><mi>s</mi></msub><mover><mo>→</mo><msub><mi>f</mi><mi>θ</mi></msub></mover><mstyle mathvariant="script"><mi>𝒢</mi></mstyle></mrow><annotation encoding="application/x-tex">
+I_s
+\overset{f_\theta}{\longrightarrow}
+\mathcal G
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 16">(16)</span></span></p>
+<p>得到：</p>
+<p><span class="numbered-equation" id="equation-17"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="script"><mi>𝒢</mi></mstyle><mo>=</mo><mo stretchy="false" form="prefix">{</mo><msub><mi>g</mi><mn>1</mn></msub><mo>,</mo><msub><mi>g</mi><mn>2</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>g</mi><mi>N</mi></msub><mo stretchy="false" form="postfix">}</mo></mrow><annotation encoding="application/x-tex">
+\mathcal G=\{g_1,g_2,\dots,g_N\}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 17">(17)</span></span></p>
+<p>然后你把虚拟相机稍微向右移动 5 cm：</p>
+<p><span class="numbered-equation" id="equation-18"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mi>s</mi></msub><mo>→</mo><msub><mi>C</mi><mrow><mi>t</mi><mn>1</mn></mrow></msub></mrow><annotation encoding="application/x-tex">
+C_s \rightarrow C_{t1}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 18">(18)</span></span></p>
+<p>这是<strong>小基线（small baseline）</strong>。</p>
+<p>如果移动 20 cm：</p>
+<p><span class="numbered-equation" id="equation-19"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mi>s</mi></msub><mo>→</mo><msub><mi>C</mi><mrow><mi>t</mi><mn>2</mn></mrow></msub></mrow><annotation encoding="application/x-tex">
+C_s \rightarrow C_{t2}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 19">(19)</span></span></p>
+<p>是中等视角变化。</p>
+<p>如果虚拟相机移动 1～2 m：</p>
+<p><span class="numbered-equation" id="equation-20"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mi>s</mi></msub><mo>→</mo><msub><mi>C</mi><mrow><mi>t</mi><mn>3</mn></mrow></msub></mrow><annotation encoding="application/x-tex">
+C_s \rightarrow C_{t3}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 20">(20)</span></span></p>
+<p>这就是 InfiniSplat 所说的<strong>大基线新视角（large-baseline novel view）</strong>。</p>
+<h4 id="infinisplat-的实验其实把大基线定义得非常具体">InfiniSplat 的实验其实把“大基线”定义得非常具体</h4>
+<p>把 source-target camera baseline 按真实相机位姿分成：</p>
+<p><span class="numbered-equation" id="equation-21"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>0.5</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+[0,0.5)
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 21">(21)</span></span></p>
+<p><span class="numbered-equation" id="equation-22"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0.5</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+[0.5,1)
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 22">(22)</span></span></p>
+<p><span class="numbered-equation" id="equation-23"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>1</mn><mo>,</mo><mn>2</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+[1,2)
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 23">(23)</span></span></p>
+<p><span class="numbered-equation" id="equation-24"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>2</mn><mo>,</mo><mo>+</mo><mi>∞</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+[2,+\infty)
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 24">(24)</span></span></p>
+<p>单位是米。</p>
+<p>也就是说：</p>
+<p><span class="numbered-equation" id="equation-25"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><menclose notation="box"><mrow><mtext mathvariant="normal">source camera</mtext><mo>→</mo><mtext mathvariant="normal">target camera</mtext></mrow></menclose><annotation encoding="application/x-tex">
+\boxed{
+\text{source camera}
+\rightarrow
+\text{target camera}
+}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 25">(25)</span></span></p>
+<p>移动超过 <strong>2 m</strong> 的样本，会进入论文最困难的大基线区间。论文每个测试数据集挑选 512 个 source-target pair，并在四个 baseline 区间各取约 128 对。</p>
+<h4 id="为什么小基线容易大基线突然很困难">为什么小基线容易，大基线突然很困难？</h4>
+<p>这是理解 InfiniSplat 最重要的一点。</p>
+<p>假设相机只移动一点：</p>
+<p><span class="numbered-equation" id="equation-26"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>C</mi><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">
+\Delta C \approx 0
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 26">(26)</span></span></p>
+<p>那么新视角和原图高度重叠。</p>
+<p>大量像素可以近似理解成：</p>
+<p><span class="numbered-equation" id="equation-27"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">warp</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi>I</mi><mi>s</mi></msub><mo>,</mo><mi>D</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+\text{warp}(I_s,D)
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 27">(27)</span></span></p>
+<p>也就是说：</p>
+<blockquote>
+<p>有一张深度图 + 输入图片，做一点几何变换就已经能骗得很像。</p>
+</blockquote>
+<p>因此很多 single-image 3DGS 方法即使学到的并不是特别好的三维结构，也能在附近视角获得不错结果。</p>
+<h3 id="四类错误">3.5 四类错误</h3>
+<figure>
+<img src="assets/figure-04.png" width="760" alt="image-20261125111857305" /><figcaption aria-hidden="true">image-20261125111857305</figcaption>
+</figure>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>错误类型</th>
+<th>核心表现</th>
+<th>可能原因或空间组织特点</th>
+<th>直观例子</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>撕裂（Tearing）</strong></td>
+<td>局部结构被不规则拉扯、拉伸或撕开，可能出现细丝、扭曲、分叉或错位；不一定有空白缺口</td>
+<td>相邻高斯中心位置不一致，尺度或旋转预测不合理，或局部深度估计出现错误变化</td>
+<td>笔直窗框从侧面看被拉成细长线条，边缘像被撕开</td>
+</tr>
+<tr class="even">
+<td><strong>表面断裂（Surface Breaks）</strong></td>
+<td>本应连续的表面覆盖被中断，出现裂缝、孔洞或不连续边界</td>
+<td>高斯分布密度、尺度、不透明度或位置不合适，导致部分区域覆盖不足</td>
+<td>一堵墙只覆盖了左右两部分，中间出现空白或断层</td>
+</tr>
+<tr class="odd">
+<td><strong>结构松散（Loose Structure）</strong></td>
+<td>高斯没有紧密组织成稳定表面，表现为漂浮物、散乱分布或模糊表面；即使没有明显孔洞也可能存在</td>
+<td>高斯散布在表面前后，尺度不一致，或独立漂浮在空间中</td>
+<td>墙面区域仍有覆盖，但墙前墙后分布着许多散乱高斯</td>
+</tr>
+<tr class="even">
+<td><strong>严重几何畸变（Severe Geometric Distortion）</strong></td>
+<td>整体或大范围形状、比例、相对位置错误；即使表面连续，几何仍可能错误</td>
+<td>深度先验错误、单目重建的尺度或形状歧义、错误的位置更新，或仅适合输入视角的几何</td>
+<td>直墙变弯、建筑立面扭曲、桌子被拉长，或垂直柱子弯曲</td>
+</tr>
+</tbody>
+</table>
+<p><strong>撕裂强调局部形态被拉扯，表面断裂强调覆盖不连续，两者可以同时发生。</strong>3DGS 本身没有严格的网格拓扑，这里的“断裂”描述渲染结果或高斯空间组织的连续性缺失，并不意味着三角网格中的边被切断。</p>
+<p>其中最重要的一点是：</p>
+<p><span class="numbered-equation" id="equation-28"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><menclose notation="box"><mrow><mtext mathvariant="normal">几何连续（Geometric Continuity）</mtext><mo>≠</mo><mtext mathvariant="normal">几何正确（Geometric Accuracy）</mtext></mrow></menclose><annotation encoding="application/x-tex">
+\boxed{
+\text{几何连续（Geometric Continuity）}
+\neq
+\text{几何正确（Geometric Accuracy）}
+}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 28">(28)</span></span></p>
+<p>例如，一个完整但被错误弯曲的墙面，可能没有任何裂缝，但几何仍然不准确。</p>
+<p>同样，一个大致位于正确位置的墙面，也可能因为高斯覆盖不足而出现大量孔洞。</p>
+<h4 id="为什么这些问题在小基线时不明显而大基线时暴露">为什么这些问题在小基线时不明显，而大基线时暴露？</h4>
+<p>一个重要原因是<strong>投影造成的错误掩盖（Projection-induced Error Masking）</strong>。</p>
+<p>假设源相机正对墙面，高斯沿视线方向稍微分散。</p>
+<p>从正面观察时：</p>
+<ul>
+<li>位于墙前方和后方的高斯可能投影到相近的像素；</li>
+<li>它们的颜色经过透明度合成后，仍然能够近似重建输入图像；</li>
+<li>因而三维组织错误不一定会在 RGB 图像中明显出现。</li>
+</ul>
+<p>但目标相机向侧面移动后，原本沿视线方向重叠的高斯会产生视差（Parallax），其空间位置差异就逐渐暴露。</p>
+<p>可以用针孔相机的简单模型理解。</p>
+<p>假设三维点深度为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Z</mi><annotation encoding="application/x-tex">Z</annotation></semantics></math>，相机横向平移距离为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>B</mi><annotation encoding="application/x-tex">B</annotation></semantics></math>，且相机朝向保持不变，则该点在图像中的水平位移幅度近似为：</p>
+<p><span class="numbered-equation" id="equation-29"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><mi>Δ</mi><mi>u</mi><mo stretchy="false" form="prefix">|</mo><mo>≈</mo><mfrac><mrow><mi>f</mi><mi>B</mi></mrow><mi>Z</mi></mfrac></mrow><annotation encoding="application/x-tex">
+|\Delta u|\approx\frac{fB}{Z}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 29">(29)</span></span></p>
+<p>其中：</p>
+<ul>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>f</mi><annotation encoding="application/x-tex">f</annotation></semantics></math>：焦距（以像素为单位）；</li>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>B</mi><annotation encoding="application/x-tex">B</annotation></semantics></math>：相机横向基线；</li>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Z</mi><annotation encoding="application/x-tex">Z</annotation></semantics></math>：点的深度。</li>
+</ul>
+<p>当 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>B</mi><annotation encoding="application/x-tex">B</annotation></semantics></math> 增大时，视差增大。不同深度的高斯投影位置分离得更加明显。</p>
+<p>所以一组在源视角中看似重叠良好的高斯，在侧视角可能突然呈现为不同层次、孔洞或分散结构。</p>
+<p>这就是为什么作者特别强调<strong>大基线新视图合成（Large-baseline Novel View Synthesis）</strong>。</p>
+<h2 id="infinisplat">4. InfiniSplat</h2>
+<h3 id="重要的几何直觉同样一个像素对应的三维表面积不同">4.1 重要的几何直觉：同样一个像素，对应的三维表面积不同</h3>
+<p>假设针孔相机：</p>
+<p><span class="numbered-equation" id="equation-30"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>p</mi><mo accent="true">̃</mo></mover><mo>=</mo><mrow><mo stretchy="true" form="prefix">[</mo><mtable><mtr><mtd columnalign="center"><mi>x</mi></mtd></mtr><mtr><mtd columnalign="center"><mi>y</mi></mtd></mtr><mtr><mtd columnalign="center"><mn>1</mn></mtd></mtr></mtable><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\tilde p=
+\begin{bmatrix}
+x\\y\\1
+\end{bmatrix}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 30">(30)</span></span></p>
+<p>若深度为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>z</mi><annotation encoding="application/x-tex">z</annotation></semantics></math>，则反投影：</p>
+<p><span class="numbered-equation" id="equation-31"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi><mo>=</mo><mi>z</mi><msup><mi>K</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><mover><mi>p</mi><mo accent="true">̃</mo></mover><mi>.</mi></mrow><annotation encoding="application/x-tex">
+X=zK^{-1}\tilde p.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 31">(31)</span></span></p>
+<p>考虑两个相邻像素：</p>
+<p><span class="numbered-equation" id="equation-32"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>p</mi><mn>1</mn></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mspace width="2.0em"></mspace><msub><mi>p</mi><mn>2</mn></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>+</mo><mn>1</mn><mo>,</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+p_1=(x,y),\qquad p_2=(x+1,y).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 32">(32)</span></span></p>
+<p>它们的三维距离近似与深度 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>z</mi><annotation encoding="application/x-tex">z</annotation></semantics></math> 成正比：</p>
+<p><span class="numbered-equation" id="equation-33"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="postfix">∥</mo><msub><mi>X</mi><mn>2</mn></msub><mo>−</mo><msub><mi>X</mi><mn>1</mn></msub><mo stretchy="false" form="postfix">∥</mo><mo>∝</mo><mfrac><mi>z</mi><mi>f</mi></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\|X_2-X_1\|\propto\frac{z}{f}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 33">(33)</span></span></p>
+<p>所以物体越远，一个像素覆盖的世界空间越大。</p>
+<p>如果表面还发生倾斜，则会进一步受到透视缩短（foreshortening）影响。</p>
+<p>因此一个固定像素格子对应的真实三维面积大致不是常数，而会随：</p>
+<ul>
+<li>深度；</li>
+<li>表面倾角；</li>
+<li>相机焦距；</li>
+<li>局部几何变化；</li>
+</ul>
+<p>而改变。</p>
+<p>这就是为什么作者计算：</p>
+<p><span class="numbered-equation" id="equation-34"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>A</mi><mi>t</mi></msub><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mo stretchy="false" form="postfix">∥</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>X</mi><mi>b</mi></msub><mo>−</mo><msub><mi>X</mi><mi>a</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>X</mi><mi>c</mi></msub><mo>−</mo><msub><mi>X</mi><mi>a</mi></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">∥</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+A_t=\frac12\|(X_b-X_a)\times(X_c-X_a)\|.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 34">(34)</span></span></p>
+<p>它实际上是在估计：</p>
+<blockquote>
+<p><strong>这一小块二维图像区域，在三维世界里到底覆盖了多大面积？</strong></p>
+</blockquote>
+<p>面积越大，就应该分配越多 Gaussian supports。</p>
+<h3 id="为什么深度不连续处要删除三角形">4.2 为什么深度不连续处要删除三角形？</h3>
+<p>假设一个像素属于前景椅子，旁边像素属于背景墙：</p>
+<pre><code>camera
+   |
+   |    chair point ●
+   |
+   |                         wall point ●</code></pre>
+<p>如果把这两个点和第三个像素点连成三角形，会生成一个跨越巨大空域的“假表面”。</p>
+<p>三角形面积可能异常大，于是采样器还会误以为这里需要大量高斯。</p>
+<p>所以作者先检查三角形三个顶点之间的相对深度变化，若变化过大就丢弃。</p>
+<p>这本质上是在使用一个非常经典的先验：</p>
+<blockquote>
+<p><strong>图像邻域不一定对应三维表面邻域，尤其在 occlusion boundary（遮挡边界）上。</strong></p>
+</blockquote>
+<h3 id="支撑点是什么和高斯中心的区别">4.3 支撑点是什么？和高斯中心的区别？</h3>
+<figure>
+<img src="assets/figure-05.png" width="580" alt="image-20261125110607062" /><figcaption aria-hidden="true">image-20261125110607062</figcaption>
+</figure>
+<p>左边，支撑点只能来自规则的像素中心，例如：</p>
+<p><span class="numbered-equation" id="equation-35"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>,</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mo stretchy="false" form="prefix">(</mo><mn>2</mn><mo>,</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mi>…</mi></mrow><annotation encoding="application/x-tex">
+(0,0),(1,0),(2,0),\ldots
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 35">(35)</span></span></p>
+<p>右边，支撑点可以是连续的二维坐标：</p>
+<p><span class="numbered-equation" id="equation-36"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>0.35</mn><mo>,</mo><mn>0.72</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mo stretchy="false" form="prefix">(</mo><mn>1.24</mn><mo>,</mo><mn>2.56</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mi>…</mi></mrow><annotation encoding="application/x-tex">
+(0.35,0.72),(1.24,2.56),\ldots
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 36">(36)</span></span></p>
+<p>这些新坐标不是随便选的，而是由预测深度对应的<strong>局部三维表面积</strong>决定采样概率。</p>
+<p>这里的二维支撑 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>q</mi><mi>i</mi></msub><annotation encoding="application/x-tex">q_i</annotation></semantics></math> 可以理解为：</p>
+<blockquote>
+<p>“我要在输入图像中的这个连续坐标位置，放置一个候选 Gaussian，并从这里读取图像特征。”</p>
+</blockquote>
+<p>它首先是一个二维 query：</p>
+<p><span class="numbered-equation" id="equation-37"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>i</mi></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>u</mi><mi>i</mi></msub><mo>,</mo><msub><mi>v</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+q_i=(u_i,v_i).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 37">(37)</span></span></p>
+<p>再利用深度：</p>
+<p><span class="numbered-equation" id="equation-38"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>q</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+D(q_i)
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 38">(38)</span></span></p>
+<p>反投影成基础三维位置：</p>
+<p><span class="numbered-equation" id="equation-39"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>μ</mi><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo>=</mo><msup><mi>Π</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><mo stretchy="false" form="prefix">(</mo><msub><mi>q</mi><mi>i</mi></msub><mo>,</mo><mi>D</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>q</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>;</mo><mi>K</mi><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\bar\mu_i=\Pi^{-1}(q_i,D(q_i);K).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 39">(39)</span></span></p>
+<p>所以：</p>
+<pre class="text"><code>2D support
+   ↓ depth
+3D base Gaussian center</code></pre>
+<p>这样做的好处是：所有图像特征本来就在二维 feature map 上，因此 query 坐标既可以用于几何定位，也可以用于 feature sampling。</p>
+<h3 id="什么叫锚定于几何">4.4 什么叫“锚定于几何”？</h3>
+<p>考虑一个倾斜的墙面。</p>
+<p>相机观察这个墙面时，近处的物理区域在图像中通常占据更多像素，远处的同样大小物理区域则占据更少像素。</p>
+<p>所以，<strong>二维图像中的均匀采样，不等于三维物体表面上的均匀采样。</strong></p>
+<figure>
+<img src="assets/figure-06.png" width="580" alt="image-20261125110906528" /><figcaption aria-hidden="true">image-20261125110906528</figcaption>
+</figure>
+<p>InfiniSplat 的做法是：</p>
+<p><strong>第一步：</strong> 利用深度图（Depth Map）将每个像素反投影到三维空间：</p>
+<p><span class="numbered-equation" id="equation-40"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="bold"><mi>𝐗</mi></mstyle><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo>,</mo><mi>v</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>D</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo>,</mo><mi>v</mi><mo stretchy="false" form="postfix">)</mo><msup><mi>K</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><mo stretchy="false" form="prefix">[</mo><mi>u</mi><mo>,</mo><mi>v</mi><mo>,</mo><mn>1</mn><msup><mo stretchy="false" form="postfix">]</mo><mi>⊤</mi></msup></mrow><annotation encoding="application/x-tex">
+\mathbf X(u,v)=D(u,v)K^{-1}[u,v,1]^\top
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 40">(40)</span></span></p>
+<p><strong>第二步：</strong> 把相邻像素对应的三维点连接成局部三角形，计算其面积：</p>
+<p><span class="numbered-equation" id="equation-41"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>A</mi><mi>t</mi></msub><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mrow><mo stretchy="true" form="prefix">∥</mo><mo stretchy="false" form="prefix">(</mo><msub><mstyle mathvariant="bold"><mi>𝐗</mi></mstyle><mi>b</mi></msub><mo>−</mo><msub><mstyle mathvariant="bold"><mi>𝐗</mi></mstyle><mi>a</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mo stretchy="false" form="prefix">(</mo><msub><mstyle mathvariant="bold"><mi>𝐗</mi></mstyle><mi>c</mi></msub><mo>−</mo><msub><mstyle mathvariant="bold"><mi>𝐗</mi></mstyle><mi>a</mi></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">∥</mo></mrow></mrow><annotation encoding="application/x-tex">
+A_t=\frac12\left\|
+(\mathbf X_b-\mathbf X_a)\times
+(\mathbf X_c-\mathbf X_a)
+\right\|
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 41">(41)</span></span></p>
+<p><strong>第三步：</strong> 根据面积决定分配多少个支撑点：</p>
+<p><span class="numbered-equation" id="equation-42"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mi>t</mi></msub><mo>=</mo><mfrac><msub><mi>A</mi><mi>t</mi></msub><mrow><munder><mo>∑</mo><mi>j</mi></munder><msub><mi>A</mi><mi>j</mi></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">
+w_t=\frac{A_t}{\sum_j A_j}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 42">(42)</span></span></p>
+<p>举个例子，假设两个图像三角形对应的三维面积分别是：</p>
+<p><span class="numbered-equation" id="equation-43"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>A</mi><mn>1</mn></msub><mo>=</mo><mn>1</mn><msup><mtext mathvariant="normal">m</mtext><mn>2</mn></msup><mo>,</mo><mspace width="1.0em"></mspace><msub><mi>A</mi><mn>2</mn></msub><mo>=</mo><mn>4</mn><msup><mtext mathvariant="normal">m</mtext><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">
+A_1=1\text{m}^2,\quad A_2=4\text{m}^2
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 43">(43)</span></span></p>
+<p>如果一共分配 100 个采样点，那么按面积比例，预期会分配：</p>
+<p><span class="numbered-equation" id="equation-44"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>N</mi><mn>1</mn></msub><mo>≈</mo><mn>20</mn><mo>,</mo><mspace width="1.0em"></mspace><msub><mi>N</mi><mn>2</mn></msub><mo>≈</mo><mn>80</mn></mrow><annotation encoding="application/x-tex">
+N_1\approx20,\quad N_2\approx80
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 44">(44)</span></span></p>
+<p>这就是“几何引导（Geometry-guided）”的含义：<strong>分配多少支撑点，由三维几何覆盖需求决定，而不只是由图像像素数量决定。</strong></p>
+<p>不过论文并不是直接在三维表面上任意生成点，而是根据三维三角形面积，在对应的二维图像三角形内采样，然后再通过深度反投影获得三维位置。</p>
+<h3 id="为什么改成-irregular-support-后就需要-implicit-decoder">4.5 为什么改成 irregular support 后，就需要 implicit decoder？</h3>
+<p>传统 dense decoder 可以直接输出：</p>
+<p><span class="numbered-equation" id="equation-45"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo stretchy="false" form="prefix">[</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mo>:</mo><mo stretchy="false" form="postfix">]</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+Y[x,y,:].
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 45">(45)</span></span></p>
+<p>但 InfiniSplat 的支撑是：</p>
+<p><span class="numbered-equation" id="equation-46"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mn>1</mn></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mn>13.28</mn><mo>,</mo><mn>40.17</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+q_1=(13.28,40.17),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 46">(46)</span></span></p>
+<p><span class="numbered-equation" id="equation-47"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mn>2</mn></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mn>92.51</mn><mo>,</mo><mn>18.63</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+q_2=(92.51,18.63),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 47">(47)</span></span></p>
+<p><span class="numbered-equation" id="equation-48"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mn>3</mn></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mn>92.77</mn><mo>,</mo><mn>18.91</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+q_3=(92.77,18.91),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 48">(48)</span></span></p>
+<p>这些坐标：</p>
+<ul>
+<li>不是整数；</li>
+<li>不是规则间隔；</li>
+<li>每个局部区域支撑数量不同。</li>
+</ul>
+<p>因此输出必须变成：</p>
+<p><span class="numbered-equation" id="equation-49"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>g</mi><mi>i</mi></msub><mo>=</mo><msub><mi>f</mi><mi>θ</mi></msub><mo stretchy="false" form="prefix">(</mo><msub><mi>q</mi><mi>i</mi></msub><mo>,</mo><mi>I</mi><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+g_i=f_\theta(q_i,I).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 49">(49)</span></span></p>
+<p>这就是“隐式函数（implicit function）”的核心思路：</p>
+<blockquote>
+<p>网络不输出一个固定大小的 dense grid，而是给定任意 query coordinate，返回该坐标处的预测结果。</p>
+</blockquote>
+<p>类似：</p>
+<p><span class="numbered-equation" id="equation-50"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">LIIF</mtext><mo>:</mo><mspace width="1.0em"></mspace><mo stretchy="false" form="prefix">(</mo><mi>q</mi><mo>,</mo><mi>F</mi><mo stretchy="false" form="postfix">)</mo><mo>↦</mo><mi>R</mi><mi>G</mi><mi>B</mi><mo stretchy="false" form="prefix">(</mo><mi>q</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\text{LIIF}:\quad (q,F)\mapsto RGB(q),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 50">(50)</span></span></p>
+<p><span class="numbered-equation" id="equation-51"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">InfiniDepth</mtext><mo>:</mo><mspace width="1.0em"></mspace><mo stretchy="false" form="prefix">(</mo><mi>q</mi><mo>,</mo><mi>F</mi><mo stretchy="false" form="postfix">)</mo><mo>↦</mo><mi>D</mi><mo stretchy="false" form="prefix">(</mo><mi>q</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\text{InfiniDepth}:\quad (q,F)\mapsto D(q),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 51">(51)</span></span></p>
+<p>而 InfiniSplat 是：</p>
+<p><span class="numbered-equation" id="equation-52"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><menclose notation="box"><mrow><mo stretchy="false" form="prefix">(</mo><mi>q</mi><mo>,</mo><mi>F</mi><mo>,</mo><mover><mi>g</mi><mo accent="true">‾</mo></mover><mo stretchy="false" form="postfix">)</mo><mo>↦</mo><mi>Δ</mi><mi>g</mi></mrow></menclose><annotation encoding="application/x-tex">
+\boxed{
+(q,F,\bar g)\mapsto\Delta g
+}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 52">(52)</span></span></p>
+<p>因此它不是“implicit scene representation”意义上的 NeRF；它是<strong>implicit decoding function</strong>，最终输出仍然是显式 Gaussian primitives。</p>
+<p>这是一个容易混淆但非常重要的点。</p>
+<h3 id="dino-分支到底在做什么">4.6 DINO 分支到底在做什么？</h3>
+<p>DINO 是一种自监督视觉 Transformer（self-supervised Vision Transformer）表征。</p>
+<p>它最重要的能力不是精确恢复纹理，而是形成稳定的高层视觉语义：</p>
+<ul>
+<li>哪些像素属于同一个物体；</li>
+<li>哪些区域具有相同语义；</li>
+<li>哪些结构在不同图像域中仍然对应；</li>
+<li>局部 patch 的高层类别/部件关系。</li>
+</ul>
+<p>因此 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>F</mi><mstyle mathvariant="normal"><mi>d</mi><mi>i</mi><mi>n</mi><mi>o</mi></mstyle></msup><annotation encoding="application/x-tex">F^{\mathrm{dino}}</annotation></semantics></math> 更像：</p>
+<pre class="text"><code>“这里是墙面”
+“这里是桌子边缘”
+“这里属于同一辆车”
+“这两个 patch 在语义上相关”</code></pre>
+<p>而不是：</p>
+<pre class="text"><code>“这里 RGB 精确是多少”</code></pre>
+<p>为什么 cross-dataset 泛化特别依赖 DINO？</p>
+<p>因为 Hypersim 是合成数据，而 ScanNet++ 等是真实图像，二者在：</p>
+<ul>
+<li>材质；</li>
+<li>光照；</li>
+<li>噪声；</li>
+<li>色彩分布；</li>
+</ul>
+<p>上差异明显。</p>
+<p>高层语义特征通常比低层 RGB 纹理对 domain shift 更鲁棒。</p>
+<p>所以去掉 DINO 后 ScanNet++ PSNR 从：</p>
+<p><span class="numbered-equation" id="equation-53"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>22.240</mn><mo>→</mo><mn>12.501</mn><mo>,</mo></mrow><annotation encoding="application/x-tex">
+22.240\rightarrow12.501,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 53">(53)</span></span></p>
+<p>这是非常合理的现象。</p>
+<hr />
+<h3 id="cnn-分支为什么仍然需要">4.7 CNN 分支为什么仍然需要？</h3>
+<p>如果 DINO 很强，为什么还要 CNN？</p>
+<p>因为 DINO 的 patch token 通常空间分辨率相对低，而且更偏高层语义。</p>
+<p>3DGS 的渲染却非常依赖：</p>
+<ul>
+<li>精细颜色；</li>
+<li>边缘；</li>
+<li>小纹理；</li>
+<li>局部高频细节。</li>
+</ul>
+<p>所以 CNN 分支提供：</p>
+<p><span class="numbered-equation" id="equation-54"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>F</mi><mstyle mathvariant="normal"><mi>c</mi><mi>n</mi><mi>n</mi></mstyle></msup><annotation encoding="application/x-tex">
+F^{\mathrm{cnn}}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 54">(54)</span></span></p>
+<p>作为 low-level appearance cue。</p>
+<p>可以把二者理解成：</p>
+<pre class="text"><code>DINO：这是什么、这一片应该连起来
+CNN ：这里具体长什么样、边缘在哪</code></pre>
+<p>因此：</p>
+<p><span class="numbered-equation" id="equation-55"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">DINO</mtext><mo>=</mo><mtext mathvariant="normal">结构/语义泛化 backbone</mtext><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\text{DINO}=\text{结构/语义泛化 backbone},
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 55">(55)</span></span></p>
+<p><span class="numbered-equation" id="equation-56"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">CNN</mtext><mo>=</mo><mtext mathvariant="normal">局部纹理/边界补偿</mtext><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\text{CNN}=\text{局部纹理/边界补偿}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 56">(56)</span></span></p>
+<hr />
+<h3 id="为什么不用直接拼接-dino-和-cnn而要-gated-fusion">4.8 为什么不用直接拼接 DINO 和 CNN，而要 gated fusion？</h3>
+<p>简单 concat：</p>
+<p><span class="numbered-equation" id="equation-57"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo>=</mo><mo stretchy="false" form="prefix">[</mo><msup><mi>f</mi><mrow><mi>d</mi><mi>i</mi><mi>n</mi><mi>o</mi></mrow></msup><mo>,</mo><msup><mi>f</mi><mrow><mi>c</mi><mi>n</mi><mi>n</mi></mrow></msup><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">
+h=[f^{dino},f^{cnn}]
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 57">(57)</span></span></p>
+<p>当然也可以。</p>
+<p>论文使用门控：</p>
+<p><span class="numbered-equation" id="equation-58"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mi>σ</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>W</mi><mi>g</mi></msub><mo stretchy="false" form="prefix">[</mo><msup><mi>f</mi><mrow><mi>d</mi><mi>i</mi><mi>n</mi><mi>o</mi></mrow></msup><mo>,</mo><msup><mover><mi>f</mi><mo accent="true">̃</mo></mover><mrow><mi>c</mi><mi>n</mi><mi>n</mi></mrow></msup><mo stretchy="false" form="postfix">]</mo><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\alpha=\sigma(W_g[f^{dino},\tilde f^{cnn}]),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 58">(58)</span></span></p>
+<p><span class="numbered-equation" id="equation-59"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo>=</mo><mi>α</mi><mo>⊙</mo><msup><mi>f</mi><mrow><mi>d</mi><mi>i</mi><mi>n</mi><mi>o</mi></mrow></msup><mo>+</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>α</mi><mo stretchy="false" form="postfix">)</mo><mo>⊙</mo><msup><mover><mi>f</mi><mo accent="true">̃</mo></mover><mrow><mi>c</mi><mi>n</mi><mi>n</mi></mrow></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+h=\alpha\odot f^{dino}+(1-\alpha)\odot\tilde f^{cnn}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 59">(59)</span></span></p>
+<p>这相当于对每个通道学习一个软开关：</p>
+<p><span class="numbered-equation" id="equation-60"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>k</mi></msub><mo>∈</mo><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\alpha_k\in[0,1].
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 60">(60)</span></span></p>
+<p>如果：</p>
+<p><span class="numbered-equation" id="equation-61"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>k</mi></msub><mo>≈</mo><mn>1</mn><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\alpha_k\approx1,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 61">(61)</span></span></p>
+<p>第 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> 个通道主要依赖 DINO；</p>
+<p>如果：</p>
+<p><span class="numbered-equation" id="equation-62"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>k</mi></msub><mo>≈</mo><mn>0</mn><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\alpha_k\approx0,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 62">(62)</span></span></p>
+<p>主要依赖 CNN。</p>
+<p>所以它比固定加权更灵活。</p>
+<hr />
+<h3 id="为什么不直接预测三维偏移-delta-xinmathbb-r3">4.9 为什么不直接预测三维偏移 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>X</mi><mo>∈</mo><msup><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mn>3</mn></msup></mrow><annotation encoding="application/x-tex">\Delta X\in\mathbb R^3</annotation></semantics></math>？</h3>
+<p>论文预测：</p>
+<p><span class="numbered-equation" id="equation-63"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>u</mi><mo>∈</mo><msup><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">
+\Delta u\in\mathbb R^2
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 63">(63)</span></span></p>
+<p>和：</p>
+<p><span class="numbered-equation" id="equation-64"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>z</mi><mo>∈</mo><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\Delta z\in\mathbb R.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 64">(64)</span></span></p>
+<p>再反投影。</p>
+<p>这是一个很聪明的参数化。</p>
+<p>因为基础 Gaussian 已经来自：</p>
+<p><span class="numbered-equation" id="equation-65"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>q</mi><mi>i</mi></msub><mo>,</mo><mi>D</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>q</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+(q_i,D(q_i)).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 65">(65)</span></span></p>
+<p>它天然属于输入相机的成像射线。</p>
+<p>如果直接预测任意：</p>
+<p><span class="numbered-equation" id="equation-66"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>X</mi><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mi>Δ</mi><mi>X</mi><mo>,</mo><mi>Δ</mi><mi>Y</mi><mo>,</mo><mi>Δ</mi><mi>Z</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\Delta X=(\Delta X,\Delta Y,\Delta Z),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 66">(66)</span></span></p>
+<p>网络可以把 Gaussian 随意推到三维空间中，容易破坏 geometry scaffold。</p>
+<p>而使用：</p>
+<pre class="text"><code>图像平面小位移 Δu
++
+沿视线方向的小深度调整 Δz</code></pre>
+<p>相当于告诉网络：</p>
+<blockquote>
+<p>“你可以修正深度先验，但不要完全抛弃它。”</p>
+</blockquote>
+<p>也就是：</p>
+<p><span class="numbered-equation" id="equation-67"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">strong initialization</mtext><mo>+</mo><mtext mathvariant="normal">bounded local correction</mtext><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\text{strong initialization}
++
+\text{bounded local correction}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 67">(67)</span></span></p>
+<p>这符合残差学习（residual learning）的思想。</p>
+<h3 id="为什么颜色opacityscale-要在-inverse-activation-space-更新">4.10 为什么颜色、opacity、scale 要在 inverse-activation space 更新？</h3>
+<p>假设 opacity 必须满足：</p>
+<p><span class="numbered-equation" id="equation-68"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>∈</mo><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\alpha\in(0,1).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 68">(68)</span></span></p>
+<p>如果直接：</p>
+<p><span class="numbered-equation" id="equation-69"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mover><mi>α</mi><mo accent="true">‾</mo></mover><mo>+</mo><mi>Δ</mi><mi>α</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\alpha=\bar\alpha+\Delta\alpha,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 69">(69)</span></span></p>
+<p>就可能得到：</p>
+<p><span class="numbered-equation" id="equation-70"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mn>1.4</mn></mrow><annotation encoding="application/x-tex">
+\alpha=1.4
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 70">(70)</span></span></p>
+<p>或者：</p>
+<p><span class="numbered-equation" id="equation-71"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mo>−</mo><mn>0.2</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\alpha=-0.2.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 71">(71)</span></span></p>
+<p>都是非法值。</p>
+<p>更好的方法是让：</p>
+<p><span class="numbered-equation" id="equation-72"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mi>σ</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\alpha=\sigma(a),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 72">(72)</span></span></p>
+<p>其中 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi><mo>∈</mo><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle></mrow><annotation encoding="application/x-tex">a\in\mathbb R</annotation></semantics></math> 无限制。</p>
+<p>基础 opacity：</p>
+<p><span class="numbered-equation" id="equation-73"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>a</mi><mo accent="true">‾</mo></mover><mo>=</mo><msup><mi>σ</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><mo stretchy="false" form="prefix">(</mo><mover><mi>α</mi><mo accent="true">‾</mo></mover><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\bar a=\sigma^{-1}(\bar\alpha).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 73">(73)</span></span></p>
+<p>网络在无约束空间更新：</p>
+<p><span class="numbered-equation" id="equation-74"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi><mi>′</mi><mo>=</mo><mover><mi>a</mi><mo accent="true">‾</mo></mover><mo>+</mo><mi>λ</mi><mi>Δ</mi><mi>a</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">
+a&#39;=\bar a+\lambda\Delta a,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 74">(74)</span></span></p>
+<p>最后：</p>
+<p><span class="numbered-equation" id="equation-75"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mi>′</mi><mo>=</mo><mi>σ</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mi>′</mi><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\alpha&#39;=\sigma(a&#39;).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 75">(75)</span></span></p>
+<p>无论 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi><mi>′</mi></mrow><annotation encoding="application/x-tex">a&#39;</annotation></semantics></math> 多大或多小：</p>
+<p><span class="numbered-equation" id="equation-76"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0</mn><mo>&lt;</mo><mi>α</mi><mi>′</mi><mo>&lt;</mo><mn>1</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">
+0&lt;\alpha&#39;&lt;1.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 76">(76)</span></span></p>
+<p>这就是论文统一公式：</p>
+<p><span class="numbered-equation" id="equation-77"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>g</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo>=</mo><msub><mi>ψ</mi><mi>a</mi></msub><mo stretchy="false" form="prefix">(</mo><msubsup><mi>ψ</mi><mi>a</mi><mrow><mo>−</mo><mn>1</mn></mrow></msubsup><mo stretchy="false" form="prefix">(</mo><msup><mover><mi>g</mi><mo accent="true">‾</mo></mover><mrow><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo stretchy="false" form="postfix">)</mo><mo>+</mo><msub><mi>λ</mi><mi>a</mi></msub><mi>Δ</mi><msup><mi>g</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+g^{(a)}=\psi_a(\psi_a^{-1}(\bar g^{(a)})+\lambda_a\Delta g^{(a)}).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 77">(77)</span></span></p>
+<p>对于 scale，常见 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ψ</mi><annotation encoding="application/x-tex">\psi</annotation></semantics></math> 是指数函数：</p>
+<p><span class="numbered-equation" id="equation-78"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mo>=</mo><mo>exp</mo><mo stretchy="false" form="prefix">(</mo><mover><mi>s</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+s=\exp(\hat s),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 78">(78)</span></span></p>
+<p>因此永远：</p>
+<p><span class="numbered-equation" id="equation-79"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mo>&gt;</mo><mn>0</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">
+s&gt;0.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 79">(79)</span></span></p>
+<hr />
+<h3 id="为什么需要-gaussian-regularization">4.11 为什么需要 Gaussian regularization？</h3>
+<p>仅靠图像渲染损失存在一个问题：</p>
+<blockquote>
+<p>很多不同的 Gaussian 参数组合，可以渲染出相似图像。</p>
+</blockquote>
+<p>例如：</p>
+<ul>
+<li>一个很大的低 opacity 高斯；</li>
+<li>很多个小高 opacity 高斯；</li>
+</ul>
+<p>可能在某一视角产生相似 RGB。</p>
+<p>但它们在新视角下的稳定性完全不同。</p>
+<p>因此需要约束参数本身。</p>
+<h4 id="scale-regularization">Scale regularization</h4>
+<p>约束：</p>
+<p><span class="numbered-equation" id="equation-80"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ℓ</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo>≤</mo><mo>log</mo><msub><mi>s</mi><mi>i</mi></msub><mo>≤</mo><msub><mi>ℓ</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\ell_{min}\le\log s_i\le\ell_{max}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 80">(80)</span></span></p>
+<p>防止：</p>
+<ul>
+<li>Gaussian 过大：像“雾”一样覆盖大片区域；</li>
+<li>Gaussian 过小：产生碎片化、高频噪声和孔洞。</li>
+</ul>
+<h4 id="local-smoothness">Local smoothness</h4>
+<p>如果两个支撑相邻，通常认为它们属于同一局部表面，则：</p>
+<p><span class="numbered-equation" id="equation-81"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mi>i</mi></msub><mo>≈</mo><msub><mi>s</mi><mi>j</mi></msub><mo>,</mo></mrow><annotation encoding="application/x-tex">
+s_i\approx s_j,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 81">(81)</span></span></p>
+<p><span class="numbered-equation" id="equation-82"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>≈</mo><msub><mi>α</mi><mi>j</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\alpha_i\approx\alpha_j.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 82">(82)</span></span></p>
+<p>这是一种局部平滑先验。</p>
+<p>值得注意的是：它并没有强制颜色平滑。</p>
+<p>原因很简单：真实表面可以有高频纹理，但几何尺度和透明度通常应该比颜色更平滑。</p>
+<hr />
+<h3 id="infinisplat-到底有没有真正恢复完整三维场景">4.12 InfiniSplat 到底有没有真正“恢复完整三维场景”？</h3>
+<p>严格来说：<strong>没有。</strong></p>
+<p>它生成的是一个从单个输入视角出发、适合一定视点范围内 NVS 的 3D Gaussian representation。</p>
+<p>单图看不到的区域仍然不可能被纯几何恢复。</p>
+<p>因此需要区分重建与生成，以及 InfiniSplat 在两者上的能力：</p>
+<table>
+<thead>
+<tr class="header">
+<th>维度</th>
+<th>Reconstruction（重建）</th>
+<th>Generation / Hallucination（生成 / 幻觉）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>目标</td>
+<td>恢复真实存在的三维几何</td>
+<td>对不可见区域，根据先验猜测合理内容</td>
+</tr>
+<tr class="even">
+<td>InfiniSplat 的主要能力</td>
+<td>将<strong>可见 / 近可见区域</strong>的几何组织得更稳定</td>
+<td>对未见区域具有有限的学习先验补全能力</td>
+</tr>
+<tr class="odd">
+<td>能力边界</td>
+<td>局部几何更稳定，不等于恢复完整场景</td>
+<td>大范围遮挡解除（large disocclusion）时仍可能失败，论文图 11 展示了此类情况</td>
+</tr>
+</tbody>
+</table>
+<p>因此不应该把它理解为：</p>
+<blockquote>
+<p>“一张图恢复真实世界完整 360° geometry”。</p>
+</blockquote>
+<p>更准确是：</p>
+<blockquote>
+<p>“一张图生成一个适合大于邻近视角范围的新视图渲染的显式 3DGS proxy”。</p>
+</blockquote>
+<h3 id="为什么-hypersim-训练可以泛化到真实场景">4.13 为什么 Hypersim 训练可以泛化到真实场景？</h3>
+<p>理论上这是很困难的，因为 synthetic-to-real domain gap 很大。</p>
+<p>InfiniSplat 能泛化的关键可能来自三个来源：</p>
+<ol type="1">
+<li><strong>DepthPro</strong>：在大规模真实数据上学到的几何先验；</li>
+<li><strong>DINOv3</strong>：强通用视觉语义特征；</li>
+<li>3DGS decoder 只需要学习“如何根据这些通用先验组织 Gaussian”。</li>
+</ol>
+<p>因此，虽然 Gaussian decoder 在 Hypersim 上训练，输入给 decoder 的 feature space 已经是高度通用的 pretrained representation。</p>
+<p>这也是为什么去掉 DINO 会严重崩溃。</p>
+<h2 id="从信息流角度重新理解-infinisplat">5. 从信息流角度重新理解 InfiniSplat</h2>
+<p>把整个系统拆成信息来源：</p>
+<h3 class="unlisted" id="geometry-stream">Geometry stream</h3>
+<p><span class="numbered-equation" id="equation-83"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>I</mi><mover><mo>→</mo><mrow><mi>D</mi><mi>e</mi><mi>p</mi><mi>t</mi><mi>h</mi><mi>P</mi><mi>r</mi><mi>o</mi></mrow></mover><mo stretchy="false" form="prefix">(</mo><mi>D</mi><mo>,</mo><mover><mi>K</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="postfix">)</mo><mover><mo>→</mo><mrow><mi>b</mi><mi>a</mi><mi>c</mi><mi>k</mi><mi>p</mi><mi>r</mi><mi>o</mi><mi>j</mi><mi>e</mi><mi>c</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi></mrow></mover><mtext mathvariant="normal">3D local surface</mtext><mover><mo>→</mo><mrow><mi>a</mi><mi>r</mi><mi>e</mi><mi>a</mi><mi>s</mi><mi>a</mi><mi>m</mi><mi>p</mi><mi>l</mi><mi>i</mi><mi>n</mi><mi>g</mi></mrow></mover><msub><mi>q</mi><mi>i</mi></msub><mo>,</mo><msub><mover><mi>μ</mi><mo accent="true">‾</mo></mover><mi>i</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+I
+\overset{DepthPro}{\longrightarrow}
+(D,\hat K)
+\overset{backprojection}{\longrightarrow}
+\text{3D local surface}
+\overset{area sampling}{\longrightarrow}
+q_i,\bar\mu_i.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 83">(83)</span></span></p>
+<p>回答：</p>
+<blockquote>
+<p><strong>在哪里放 Gaussian？</strong></p>
+</blockquote>
+<h3 class="unlisted" id="semantic-stream">Semantic stream</h3>
+<p><span class="numbered-equation" id="equation-84"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>I</mi><mover><mo>→</mo><mrow><mi>D</mi><mi>I</mi><mi>N</mi><mi>O</mi></mrow></mover><msup><mi>F</mi><mrow><mi>d</mi><mi>i</mi><mi>n</mi><mi>o</mi></mrow></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+I\overset{DINO}{\longrightarrow}F^{dino}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 84">(84)</span></span></p>
+<p>回答：</p>
+<blockquote>
+<p><strong>这个位置属于什么结构、应该和谁保持一致？</strong></p>
+</blockquote>
+<h3 class="unlisted" id="appearance-stream">Appearance stream</h3>
+<p><span class="numbered-equation" id="equation-85"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>I</mi><mover><mo>→</mo><mrow><mi>C</mi><mi>N</mi><mi>N</mi></mrow></mover><msup><mi>F</mi><mrow><mi>c</mi><mi>n</mi><mi>n</mi></mrow></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+I\overset{CNN}{\longrightarrow}F^{cnn}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 85">(85)</span></span></p>
+<p>回答：</p>
+<blockquote>
+<p><strong>这里具体是什么颜色、纹理、边缘？</strong></p>
+</blockquote>
+<h3 class="unlisted" id="decoder">Decoder</h3>
+<p><span class="numbered-equation" id="equation-86"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>q</mi><mi>i</mi></msub><mo>,</mo><msup><mi>F</mi><mrow><mi>d</mi><mi>i</mi><mi>n</mi><mi>o</mi></mrow></msup><mo>,</mo><msup><mi>F</mi><mrow><mi>c</mi><mi>n</mi><mi>n</mi></mrow></msup><mo>,</mo><msub><mover><mi>g</mi><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>→</mo><mi>Δ</mi><msub><mi>g</mi><mi>i</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+(q_i,F^{dino},F^{cnn},\bar g_i)
+\rightarrow
+\Delta g_i.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 86">(86)</span></span></p>
+<p>回答：</p>
+<blockquote>
+<p><strong>基于初始几何，在这里应该怎样微调 Gaussian？</strong></p>
+</blockquote>
+<p>这四块拼起来，你就真正理解了整个模型。</p>
+<h2 id="公式与数学原理">6. 公式与数学原理</h2>
+<h3 id="相机模型与反投影公式">6.1 相机模型与反投影公式</h3>
+<p>针孔相机中，一个三维点：</p>
+<p><span class="numbered-equation" id="equation-87"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mi>X</mi><mo>,</mo><mi>Y</mi><mo>,</mo><mi>Z</mi><msup><mo stretchy="false" form="postfix">)</mo><mi>T</mi></msup></mrow><annotation encoding="application/x-tex">
+X=(X,Y,Z)^T
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 87">(87)</span></span></p>
+<p>投影到图像：</p>
+<p><span class="numbered-equation" id="equation-88"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">[</mo><mtable><mtr><mtd columnalign="center"><mi>u</mi></mtd></mtr><mtr><mtd columnalign="center"><mi>v</mi></mtd></mtr><mtr><mtd columnalign="center"><mn>1</mn></mtd></mtr></mtable><mo stretchy="true" form="postfix">]</mo></mrow><mo>∼</mo><mi>K</mi><mrow><mo stretchy="true" form="prefix">[</mo><mtable><mtr><mtd columnalign="center"><mi>X</mi><mi>/</mi><mi>Z</mi></mtd></mtr><mtr><mtd columnalign="center"><mi>Y</mi><mi>/</mi><mi>Z</mi></mtd></mtr><mtr><mtd columnalign="center"><mn>1</mn></mtd></mtr></mtable><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\begin{bmatrix}
+u\\v\\1
+\end{bmatrix}
+\sim
+K
+\begin{bmatrix}
+X/Z\\Y/Z\\1
+\end{bmatrix}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 88">(88)</span></span></p>
+<p>内参矩阵通常为：</p>
+<p><span class="numbered-equation" id="equation-89"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><mrow><mo stretchy="true" form="prefix">[</mo><mtable><mtr><mtd columnalign="center"><msub><mi>f</mi><mi>x</mi></msub></mtd><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><msub><mi>c</mi><mi>x</mi></msub></mtd></mtr><mtr><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><msub><mi>f</mi><mi>y</mi></msub></mtd><mtd columnalign="center"><msub><mi>c</mi><mi>y</mi></msub></mtd></mtr><mtr><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><mn>1</mn></mtd></mtr></mtable><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">
+K=
+\begin{bmatrix}
+f_x&amp;0&amp;c_x\\0&amp;f_y&amp;c_y\\0&amp;0&amp;1\end{bmatrix}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 89">(89)</span></span></p>
+<p>如果知道像素：</p>
+<p><span class="numbered-equation" id="equation-90"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo>,</mo><mi>v</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+p=(u,v)
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 90">(90)</span></span></p>
+<p>和相机坐标系中的 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Z</mi><annotation encoding="application/x-tex">Z</annotation></semantics></math>-depth：</p>
+<p><span class="numbered-equation" id="equation-91"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>z</mi><mo>=</mo><mi>D</mi><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+z=D(p),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 91">(91)</span></span></p>
+<p>则：</p>
+<p><span class="numbered-equation" id="equation-92"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>z</mi><msup><mi>K</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><mrow><mo stretchy="true" form="prefix">[</mo><mtable><mtr><mtd columnalign="center"><mi>u</mi></mtd></mtr><mtr><mtd columnalign="center"><mi>v</mi></mtd></mtr><mtr><mtd columnalign="center"><mn>1</mn></mtd></mtr></mtable><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">
+X(p)=zK^{-1}
+\begin{bmatrix}
+u\\v\\1
+\end{bmatrix}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 92">(92)</span></span></p>
+<p>把它展开：</p>
+<p><span class="numbered-equation" id="equation-93"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi><mo>=</mo><mi>z</mi><mfrac><mrow><mi>u</mi><mo>−</mo><msub><mi>c</mi><mi>x</mi></msub></mrow><msub><mi>f</mi><mi>x</mi></msub></mfrac><mo>,</mo></mrow><annotation encoding="application/x-tex">
+X=z\frac{u-c_x}{f_x},
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 93">(93)</span></span></p>
+<p><span class="numbered-equation" id="equation-94"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo>=</mo><mi>z</mi><mfrac><mrow><mi>v</mi><mo>−</mo><msub><mi>c</mi><mi>y</mi></msub></mrow><msub><mi>f</mi><mi>y</mi></msub></mfrac><mo>,</mo></mrow><annotation encoding="application/x-tex">
+Y=z\frac{v-c_y}{f_y},
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 94">(94)</span></span></p>
+<p><span class="numbered-equation" id="equation-95"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Z</mi><mo>=</mo><mi>z</mi><mi>.</mi></mrow><annotation encoding="application/x-tex">
+Z=z.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 95">(95)</span></span></p>
+<p>因此论文写成抽象形式：</p>
+<p><span class="numbered-equation" id="equation-96"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msup><mi>Π</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo>,</mo><mi>D</mi><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mo>;</mo><mover><mi>K</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+X(p)=\Pi^{-1}(p,D(p);\hat K).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 96">(96)</span></span></p>
+<p>其中 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>Π</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><annotation encoding="application/x-tex">\Pi^{-1}</annotation></semantics></math> 就是反投影。</p>
+<h3 id="为什么三角形面积用叉乘">6.2 为什么三角形面积用叉乘？</h3>
+<p>三角形三个三维顶点：</p>
+<p><span class="numbered-equation" id="equation-97"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>A</mi><mo>=</mo><mi>X</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>p</mi><mi>a</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mspace width="1.0em"></mspace><mi>B</mi><mo>=</mo><mi>X</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>p</mi><mi>b</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mspace width="1.0em"></mspace><mi>C</mi><mo>=</mo><mi>X</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>p</mi><mi>c</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+A=X(p_a),\quad B=X(p_b),\quad C=X(p_c).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 97">(97)</span></span></p>
+<p>从 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math> 出发两条边：</p>
+<p><span class="numbered-equation" id="equation-98"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi><mo>=</mo><mi>B</mi><mo>−</mo><mi>A</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">
+a=B-A,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 98">(98)</span></span></p>
+<p><span class="numbered-equation" id="equation-99"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mo>=</mo><mi>C</mi><mo>−</mo><mi>A</mi><mi>.</mi></mrow><annotation encoding="application/x-tex">
+b=C-A.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 99">(99)</span></span></p>
+<p>向量叉积：</p>
+<p><span class="numbered-equation" id="equation-100"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi><mo>×</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+a\times b
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 100">(100)</span></span></p>
+<p>的模长等于以 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi><mo>,</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">a,b</annotation></semantics></math> 为邻边的平行四边形面积：</p>
+<p><span class="numbered-equation" id="equation-101"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="postfix">∥</mo><mi>a</mi><mo>×</mo><mi>b</mi><mo stretchy="false" form="postfix">∥</mo><mo>=</mo><mo stretchy="false" form="postfix">∥</mo><mi>a</mi><mo stretchy="false" form="postfix">∥</mo><mo stretchy="false" form="postfix">∥</mo><mi>b</mi><mo stretchy="false" form="postfix">∥</mo><mo>sin</mo><mi>θ</mi><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\|a\times b\|
+=
+\|a\|\|b\|\sin\theta.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 101">(101)</span></span></p>
+<p>三角形面积是平行四边形一半：</p>
+<p><span class="numbered-equation" id="equation-102"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>A</mi><mi>t</mi></msub><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mo stretchy="false" form="postfix">∥</mo><mi>a</mi><mo>×</mo><mi>b</mi><mo stretchy="false" form="postfix">∥</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+A_t
+=
+\frac12\|a\times b\|.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 102">(102)</span></span></p>
+<p>所以论文公式自然得到：</p>
+<p><span class="numbered-equation" id="equation-103"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>A</mi><mi>t</mi></msub><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mo stretchy="false" form="postfix">∥</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>X</mi><mi>b</mi></msub><mo>−</mo><msub><mi>X</mi><mi>a</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>X</mi><mi>c</mi></msub><mo>−</mo><msub><mi>X</mi><mi>a</mi></msub><mo stretchy="false" form="postfix">)</mo><msub><mo stretchy="false" form="postfix">∥</mo><mn>2</mn></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+A_t
+=
+\frac12
+\|(X_b-X_a)\times(X_c-X_a)\|_2.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 103">(103)</span></span></p>
+<hr />
+<h3 id="为什么面积权重可以近似表面采样密度需求">6.3 为什么面积权重可以近似“表面采样密度需求”？</h3>
+<p>假设总共准备采样 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math> 个支撑点。</p>
+<p>第 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math> 个局部表面三角形面积 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>A</mi><mi>t</mi></msub><annotation encoding="application/x-tex">A_t</annotation></semantics></math>。</p>
+<p>总面积：</p>
+<p><span class="numbered-equation" id="equation-104"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>A</mi><mo>=</mo><munder><mo>∑</mo><mi>t</mi></munder><msub><mi>A</mi><mi>t</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+A=\sum_t A_t.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 104">(104)</span></span></p>
+<p>如果希望在三维表面上近似均匀地按面积采样，那么第 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math> 个三角形应该分配：</p>
+<p><span class="numbered-equation" id="equation-105"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>n</mi><mi>t</mi></msub><mo>≈</mo><mi>N</mi><mfrac><msub><mi>A</mi><mi>t</mi></msub><mi>A</mi></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+n_t\approx N\frac{A_t}{A}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 105">(105)</span></span></p>
+<p>定义：</p>
+<p><span class="numbered-equation" id="equation-106"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mi>t</mi></msub><mo>=</mo><mfrac><msub><mi>A</mi><mi>t</mi></msub><mrow><munder><mo>∑</mo><mrow><mi>t</mi><mi>′</mi></mrow></munder><msub><mi>A</mi><mrow><mi>t</mi><mi>′</mi></mrow></msub></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+w_t=\frac{A_t}{\sum_{t&#39;}A_{t&#39;}}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 106">(106)</span></span></p>
+<p>则：</p>
+<p><span class="numbered-equation" id="equation-107"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>n</mi><mi>t</mi></msub><mo>≈</mo><mi>N</mi><msub><mi>w</mi><mi>t</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+n_t\approx Nw_t.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 107">(107)</span></span></p>
+<p>这其实就是 Monte Carlo sampling 中非常标准的 importance allocation 思路。</p>
+<hr />
+<h3 id="如何在二维三角形内部均匀采样">6.4 如何在二维三角形内部均匀采样？</h3>
+<p>论文没有详细展开采样算法，但理解它很有用。</p>
+<p>给定三角形二维顶点：</p>
+<p><span class="numbered-equation" id="equation-108"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>p</mi><mi>a</mi></msub><mo>,</mo><msub><mi>p</mi><mi>b</mi></msub><mo>,</mo><msub><mi>p</mi><mi>c</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+p_a,p_b,p_c.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 108">(108)</span></span></p>
+<p>一种常见均匀采样方法：</p>
+<p><span class="numbered-equation" id="equation-109"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>r</mi><mn>1</mn></msub><mo>,</mo><msub><mi>r</mi><mn>2</mn></msub><mo>∼</mo><mi>U</mi><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+r_1,r_2\sim U(0,1),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 109">(109)</span></span></p>
+<p>令：</p>
+<p><span class="numbered-equation" id="equation-110"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>u</mi><mo>=</mo><mn>1</mn><mo>−</mo><msqrt><msub><mi>r</mi><mn>1</mn></msub></msqrt><mo>,</mo></mrow><annotation encoding="application/x-tex">
+u=1-\sqrt{r_1},
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 110">(110)</span></span></p>
+<p><span class="numbered-equation" id="equation-111"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>v</mi><mo>=</mo><msqrt><msub><mi>r</mi><mn>1</mn></msub></msqrt><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>r</mi><mn>2</mn></msub><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+v=\sqrt{r_1}(1-r_2),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 111">(111)</span></span></p>
+<p><span class="numbered-equation" id="equation-112"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>w</mi><mo>=</mo><msqrt><msub><mi>r</mi><mn>1</mn></msub></msqrt><msub><mi>r</mi><mn>2</mn></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+w=\sqrt{r_1}r_2.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 112">(112)</span></span></p>
+<p>则：</p>
+<p><span class="numbered-equation" id="equation-113"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>u</mi><mo>+</mo><mi>v</mi><mo>+</mo><mi>w</mi><mo>=</mo><mn>1</mn><mo>,</mo></mrow><annotation encoding="application/x-tex">
+u+v+w=1,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 113">(113)</span></span></p>
+<p>采样点：</p>
+<p><span class="numbered-equation" id="equation-114"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>q</mi><mo>=</mo><mi>u</mi><msub><mi>p</mi><mi>a</mi></msub><mo>+</mo><mi>v</mi><msub><mi>p</mi><mi>b</mi></msub><mo>+</mo><mi>w</mi><msub><mi>p</mi><mi>c</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+q=up_a+vp_b+wp_c.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 114">(114)</span></span></p>
+<p>这给出三角形内部均匀分布。</p>
+<p>注意这部分是理解 area-weighted sampling 的标准数学实现，论文正文没有明确规定必须采用这一具体算法。</p>
+<hr />
+<h3 id="双线性插值bilinear-sampling到底怎么算">6.5 双线性插值（Bilinear Sampling）到底怎么算？</h3>
+<p>support <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>q</mi><mi>i</mi></msub><annotation encoding="application/x-tex">q_i</annotation></semantics></math> 通常不是整数坐标。</p>
+<p>假设：</p>
+<p><span class="numbered-equation" id="equation-115"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>q</mi><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+q=(x,y),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 115">(115)</span></span></p>
+<p>且：</p>
+<p><span class="numbered-equation" id="equation-116"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mn>0</mn></msub><mo>=</mo><mo stretchy="false" form="prefix">⌊</mo><mi>x</mi><mo stretchy="false" form="postfix">⌋</mo><mo>,</mo><mspace width="1.0em"></mspace><msub><mi>x</mi><mn>1</mn></msub><mo>=</mo><msub><mi>x</mi><mn>0</mn></msub><mo>+</mo><mn>1</mn><mo>,</mo></mrow><annotation encoding="application/x-tex">
+x_0=\lfloor x\rfloor,
+\quad
+x_1=x_0+1,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 116">(116)</span></span></p>
+<p><span class="numbered-equation" id="equation-117"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mn>0</mn></msub><mo>=</mo><mo stretchy="false" form="prefix">⌊</mo><mi>y</mi><mo stretchy="false" form="postfix">⌋</mo><mo>,</mo><mspace width="1.0em"></mspace><msub><mi>y</mi><mn>1</mn></msub><mo>=</mo><msub><mi>y</mi><mn>0</mn></msub><mo>+</mo><mn>1</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">
+y_0=\lfloor y\rfloor,
+\quad
+y_1=y_0+1.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 117">(117)</span></span></p>
+<p>定义：</p>
+<p><span class="numbered-equation" id="equation-118"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi><mo>=</mo><mi>x</mi><mo>−</mo><msub><mi>x</mi><mn>0</mn></msub><mo>,</mo></mrow><annotation encoding="application/x-tex">
+a=x-x_0,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 118">(118)</span></span></p>
+<p><span class="numbered-equation" id="equation-119"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mo>=</mo><mi>y</mi><mo>−</mo><msub><mi>y</mi><mn>0</mn></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+b=y-y_0.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 119">(119)</span></span></p>
+<p>则 feature：</p>
+<p><span class="numbered-equation" id="equation-120"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mo stretchy="false" form="prefix">(</mo><mi>q</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>b</mi><mo stretchy="false" form="postfix">)</mo><mi>F</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mn>0</mn></msub><mo>,</mo><msub><mi>y</mi><mn>0</mn></msub><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>a</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>b</mi><mo stretchy="false" form="postfix">)</mo><mi>F</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mn>1</mn></msub><mo>,</mo><msub><mi>y</mi><mn>0</mn></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+F(q)
+=
+(1-a)(1-b)F(x_0,y_0)
++a(1-b)F(x_1,y_0)
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 120">(120)</span></span></p>
+<p><span class="numbered-equation" id="equation-121"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mspace width="1.0em"></mspace><mo>+</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo><mi>b</mi><mi>F</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mn>0</mn></msub><mo>,</mo><msub><mi>y</mi><mn>1</mn></msub><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>a</mi><mi>b</mi><mi>F</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mn>1</mn></msub><mo>,</mo><msub><mi>y</mi><mn>1</mn></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\quad+
+(1-a)bF(x_0,y_1)
++abF(x_1,y_1).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 121">(121)</span></span></p>
+<p>这使 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mo stretchy="false" form="prefix">(</mo><mi>q</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">F(q)</annotation></semantics></math> 关于坐标 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>q</mi><annotation encoding="application/x-tex">q</annotation></semantics></math> 几乎处处可微，因此 support 坐标与网络参数能够一起参与梯度传播。</p>
+<hr />
+<h3 id="门控融合的数学解释">6.6 门控融合的数学解释</h3>
+<p>论文：</p>
+<p><span class="numbered-equation" id="equation-122"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>=</mo><mi>σ</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>W</mi><mi>g</mi></msub><mo stretchy="false" form="prefix">[</mo><msubsup><mi>f</mi><mi>i</mi><mrow><mi>d</mi><mi>i</mi><mi>n</mi><mi>o</mi></mrow></msubsup><mo>,</mo><msubsup><mover><mi>f</mi><mo accent="true">̃</mo></mover><mi>i</mi><mrow><mi>c</mi><mi>n</mi><mi>n</mi></mrow></msubsup><mo stretchy="false" form="postfix">]</mo><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\alpha_i=\sigma(W_g[f_i^{dino},\tilde f_i^{cnn}]).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 122">(122)</span></span></p>
+<p>假设 feature dimension 为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>C</mi><annotation encoding="application/x-tex">C</annotation></semantics></math>：</p>
+<p><span class="numbered-equation" id="equation-123"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>∈</mo><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><msup><mo stretchy="false" form="postfix">)</mo><mi>C</mi></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\alpha_i\in(0,1)^C.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 123">(123)</span></span></p>
+<p>第 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> 通道：</p>
+<p><span class="numbered-equation" id="equation-124"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>h</mi><mrow><mi>i</mi><mo>,</mo><mi>k</mi></mrow></msub><mo>=</mo><msub><mi>α</mi><mrow><mi>i</mi><mo>,</mo><mi>k</mi></mrow></msub><msubsup><mi>f</mi><mrow><mi>i</mi><mo>,</mo><mi>k</mi></mrow><mrow><mi>d</mi><mi>i</mi><mi>n</mi><mi>o</mi></mrow></msubsup><mo>+</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>α</mi><mrow><mi>i</mi><mo>,</mo><mi>k</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo><msubsup><mover><mi>f</mi><mo accent="true">̃</mo></mover><mrow><mi>i</mi><mo>,</mo><mi>k</mi></mrow><mrow><mi>c</mi><mi>n</mi><mi>n</mi></mrow></msubsup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+h_{i,k}
+=
+\alpha_{i,k}f^{dino}_{i,k}
++
+(1-\alpha_{i,k})\tilde f^{cnn}_{i,k}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 124">(124)</span></span></p>
+<p>这是一个凸组合（convex combination），因为：</p>
+<p><span class="numbered-equation" id="equation-125"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0</mn><mo>&lt;</mo><msub><mi>α</mi><mrow><mi>i</mi><mo>,</mo><mi>k</mi></mrow></msub><mo>&lt;</mo><mn>1</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">
+0&lt;\alpha_{i,k}&lt;1.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 125">(125)</span></span></p>
+<p>因此每个通道的融合值位于两个 feature value 的加权组合之间，不会像 unrestricted linear fusion 那样任意放大。</p>
+<p>从优化角度看，这是一种“soft feature selection”。</p>
+<hr />
+<h3 id="为什么高斯更新输出正好-14-维">6.7 为什么高斯更新输出正好 14 维？</h3>
+<p>论文：</p>
+<p><span class="numbered-equation" id="equation-126"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><msub><mi>g</mi><mi>i</mi></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mi>Δ</mi><msub><mi>u</mi><mi>i</mi></msub><mo>,</mo><mi>Δ</mi><msub><mi>z</mi><mi>i</mi></msub><mo>,</mo><mi>Δ</mi><msub><mi>s</mi><mi>i</mi></msub><mo>,</mo><mi>Δ</mi><msub><mi>r</mi><mi>i</mi></msub><mo>,</mo><mi>Δ</mi><msub><mi>c</mi><mi>i</mi></msub><mo>,</mo><mi>Δ</mi><msub><mi>α</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\Delta g_i
+=(\Delta u_i,\Delta z_i,\Delta s_i,\Delta r_i,\Delta c_i,\Delta\alpha_i).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 126">(126)</span></span></p>
+<p>逐项：</p>
+<table>
+<thead>
+<tr class="header">
+<th>属性</th>
+<th style="text-align: right;">维度</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>图像平面位置 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>u</mi></mrow><annotation encoding="application/x-tex">\Delta u</annotation></semantics></math></td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="even">
+<td>深度 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>z</mi></mrow><annotation encoding="application/x-tex">\Delta z</annotation></semantics></math></td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="odd">
+<td>scale <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">\Delta s</annotation></semantics></math></td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr class="even">
+<td>quaternion <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>r</mi></mrow><annotation encoding="application/x-tex">\Delta r</annotation></semantics></math></td>
+<td style="text-align: right;">4</td>
+</tr>
+<tr class="odd">
+<td>RGB <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>c</mi></mrow><annotation encoding="application/x-tex">\Delta c</annotation></semantics></math></td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr class="even">
+<td>opacity <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>α</mi></mrow><annotation encoding="application/x-tex">\Delta\alpha</annotation></semantics></math></td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="odd">
+<td><strong>总计</strong></td>
+<td style="text-align: right;"><strong>14</strong></td>
+</tr>
+</tbody>
+</table>
+<p>因此：</p>
+<p><span class="numbered-equation" id="equation-127"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mo>+</mo><mn>1</mn><mo>+</mo><mn>3</mn><mo>+</mo><mn>4</mn><mo>+</mo><mn>3</mn><mo>+</mo><mn>1</mn><mo>=</mo><mn>14</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">
+2+1+3+4+3+1=14.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 127">(127)</span></span></p>
+<hr />
+<h3 id="四元数quaternion为什么用-4-维表示旋转">6.8 四元数（Quaternion）为什么用 4 维表示旋转？</h3>
+<p>三维旋转可以用单位四元数：</p>
+<p><span class="numbered-equation" id="equation-128"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>q</mi><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mi>w</mi><mo>,</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mi>z</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+q=(w,x,y,z),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 128">(128)</span></span></p>
+<p>满足：</p>
+<p><span class="numbered-equation" id="equation-129"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>w</mi><mn>2</mn></msup><mo>+</mo><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><msup><mi>y</mi><mn>2</mn></msup><mo>+</mo><msup><mi>z</mi><mn>2</mn></msup><mo>=</mo><mn>1</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">
+w^2+x^2+y^2+z^2=1.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 129">(129)</span></span></p>
+<p>它有 4 个参数，但只有 3 个自由度，因为有单位范数约束。</p>
+<p>相较欧拉角：</p>
+<ul>
+<li>不容易出现万向锁（gimbal lock）；</li>
+<li>数值优化更连续。</li>
+</ul>
+<p>所以网络直接预测 4 维向量，然后归一化：</p>
+<p><span class="numbered-equation" id="equation-130"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>q</mi><mi>′</mi><mo>=</mo><mfrac><mover><mi>q</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="false" form="postfix">∥</mo><mover><mi>q</mi><mo accent="true">̂</mo></mover><msub><mo stretchy="false" form="postfix">∥</mo><mn>2</mn></msub></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+q&#39;=\frac{\hat q}{\|\hat q\|_2}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 130">(130)</span></span></p>
+<p>再转换为旋转矩阵 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>R</mi><annotation encoding="application/x-tex">R</annotation></semantics></math>。</p>
+<hr />
+<h3 id="为什么-scale-用-log-space">6.9 为什么 scale 用 log-space？</h3>
+<p>高斯尺度必须满足：</p>
+<p><span class="numbered-equation" id="equation-131"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mi>i</mi></msub><mo>&gt;</mo><mn>0</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">
+s_i&gt;0.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 131">(131)</span></span></p>
+<p>令：</p>
+<p><span class="numbered-equation" id="equation-132"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>s</mi><mo accent="true">̂</mo></mover><mi>i</mi></msub><mo>=</mo><mo>log</mo><msub><mi>s</mi><mi>i</mi></msub><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\hat s_i=\log s_i,
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 132">(132)</span></span></p>
+<p>则：</p>
+<p><span class="numbered-equation" id="equation-133"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mi>i</mi></msub><mo>=</mo><msup><mi>e</mi><msub><mover><mi>s</mi><mo accent="true">̂</mo></mover><mi>i</mi></msub></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+s_i=e^{\hat s_i}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 133">(133)</span></span></p>
+<p>无论 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>s</mi><mo accent="true">̂</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\hat s_i</annotation></semantics></math> 是任意实数，<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>s</mi><mi>i</mi></msub><annotation encoding="application/x-tex">s_i</annotation></semantics></math> 永远为正。</p>
+<p>而且乘法尺度变化会变成加法：</p>
+<p><span class="numbered-equation" id="equation-134"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mi>′</mi><mo>=</mo><mi>k</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">
+s&#39;=ks
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 134">(134)</span></span></p>
+<p>对应：</p>
+<p><span class="numbered-equation" id="equation-135"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>log</mo><mi>s</mi><mi>′</mi><mo>=</mo><mo>log</mo><mi>s</mi><mo>+</mo><mo>log</mo><mi>k</mi><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\log s&#39;=\log s+\log k.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 135">(135)</span></span></p>
+<p>所以在 log-space 优化尺度往往更加稳定。</p>
+<p>这也解释论文为什么正则：</p>
+<p><span class="numbered-equation" id="equation-136"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>log</mo><msub><mi>s</mi><mi>i</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\log s_i.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 136">(136)</span></span></p>
+<hr />
+<h3 id="scale-regularization-是怎样工作的">6.10 Scale regularization 是怎样工作的？</h3>
+<p>公式：</p>
+<p><span class="numbered-equation" id="equation-137"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mstyle mathvariant="script"><mi>ℒ</mi></mstyle><mrow><mi>s</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>e</mi></mrow></msub><mo>=</mo><mfrac><mn>1</mn><mi>N</mi></mfrac><munder><mo>∑</mo><mi>i</mi></munder><mo stretchy="false" form="prefix">[</mo><mstyle mathvariant="normal"><mi>R</mi><mi>e</mi><mi>L</mi><mi>U</mi></mstyle><mo stretchy="false" form="prefix">(</mo><msub><mi>ℓ</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo>−</mo><mo>log</mo><msub><mi>s</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mstyle mathvariant="normal"><mi>R</mi><mi>e</mi><mi>L</mi><mi>U</mi></mstyle><mo stretchy="false" form="prefix">(</mo><mo>log</mo><msub><mi>s</mi><mi>i</mi></msub><mo>−</mo><msub><mi>ℓ</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">]</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\mathcal L_{scale}
+=
+\frac1N\sum_i
+[
+\mathrm{ReLU}(\ell_{min}-\log s_i)
++
+\mathrm{ReLU}(\log s_i-\ell_{max})
+].
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 137">(137)</span></span></p>
+<p>分三种情况。</p>
+<h4 id="情况-1">情况 1</h4>
+<p><span class="numbered-equation" id="equation-138"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ℓ</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo>≤</mo><mo>log</mo><msub><mi>s</mi><mi>i</mi></msub><mo>≤</mo><msub><mi>ℓ</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub></mrow><annotation encoding="application/x-tex">
+\ell_{min}\le\log s_i\le\ell_{max}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 138">(138)</span></span></p>
+<p>则两项都是 0：</p>
+<p><span class="numbered-equation" id="equation-139"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi><mo>=</mo><mn>0</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">
+L=0.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 139">(139)</span></span></p>
+<h4 id="情况-2scale-太小">情况 2：scale 太小</h4>
+<p><span class="numbered-equation" id="equation-140"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>log</mo><msub><mi>s</mi><mi>i</mi></msub><mo>&lt;</mo><msub><mi>ℓ</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\log s_i&lt;\ell_{min}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 140">(140)</span></span></p>
+<p>第一项：</p>
+<p><span class="numbered-equation" id="equation-141"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ℓ</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo>−</mo><mo>log</mo><msub><mi>s</mi><mi>i</mi></msub><mo>&gt;</mo><mn>0</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\ell_{min}-\log s_i&gt;0.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 141">(141)</span></span></p>
+<p>产生惩罚。</p>
+<h4 id="情况-3scale-太大">情况 3：scale 太大</h4>
+<p><span class="numbered-equation" id="equation-142"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>log</mo><msub><mi>s</mi><mi>i</mi></msub><mo>&gt;</mo><msub><mi>ℓ</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\log s_i&gt;\ell_{max}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 142">(142)</span></span></p>
+<p>第二项产生惩罚。</p>
+<p>所以这是一个“软盒约束（soft box constraint）”。</p>
+<p>论文设置：</p>
+<p><span class="numbered-equation" id="equation-143"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mo>−</mo><mn>8</mn><mo>,</mo><mo>−</mo><mn>3</mn><mo stretchy="false" form="postfix">]</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+[-8,-3].
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 143">(143)</span></span></p>
+<p>对应 scale 大致范围：</p>
+<p><span class="numbered-equation" id="equation-144"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><msup><mi>e</mi><mrow><mo>−</mo><mn>8</mn></mrow></msup><mo>,</mo><msup><mi>e</mi><mrow><mo>−</mo><mn>3</mn></mrow></msup><mo stretchy="false" form="postfix">]</mo><mo>≈</mo><mo stretchy="false" form="prefix">[</mo><mn>0.000335</mn><mo>,</mo><mn>0.0498</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">
+[e^{-8},e^{-3}]
+\approx
+[0.000335,0.0498]
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 144">(144)</span></span></p>
+<p>在归一化 Gaussian scale space 中。</p>
+<hr />
+<h3 id="local-smoothness-正则到底在鼓励什么">6.11 Local smoothness 正则到底在鼓励什么？</h3>
+<p><span class="numbered-equation" id="equation-145"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mstyle mathvariant="script"><mi>ℒ</mi></mstyle><mrow><mi>s</mi><mi>m</mi><mi>o</mi><mi>o</mi><mi>t</mi><mi>h</mi></mrow></msub><mo>=</mo><mfrac><mn>1</mn><mi>N</mi></mfrac><munder><mo>∑</mo><mi>i</mi></munder><mfrac><mn>1</mn><mrow><mo stretchy="false" form="prefix">|</mo><mi>N</mi><mo stretchy="false" form="prefix">(</mo><mi>i</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="prefix">|</mo></mrow></mfrac><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>N</mi><mo stretchy="false" form="prefix">(</mo><mi>i</mi><mo stretchy="false" form="postfix">)</mo></mrow></munder><mrow><mo stretchy="true" form="prefix">(</mo><mo stretchy="false" form="postfix">∥</mo><mo>log</mo><msub><mi>s</mi><mi>i</mi></msub><mo>−</mo><mo>log</mo><msub><mi>s</mi><mi>j</mi></msub><msub><mo stretchy="false" form="postfix">∥</mo><mn>1</mn></msub><mo>+</mo><mo stretchy="false" form="prefix">|</mo><msub><mi>α</mi><mi>i</mi></msub><mo>−</mo><msub><mi>α</mi><mi>j</mi></msub><mo stretchy="false" form="prefix">|</mo><mo stretchy="true" form="postfix">)</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\mathcal L_{smooth}
+=
+\frac1N\sum_i
+\frac1{|N(i)|}
+\sum_{j\in N(i)}
+\left(
+\|\log s_i-\log s_j\|_1
++
+|\alpha_i-\alpha_j|
+\right).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 145">(145)</span></span></p>
+<p>如果邻居 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>i</mi><mo>,</mo><mi>j</mi></mrow><annotation encoding="application/x-tex">i,j</annotation></semantics></math> 的尺度和 opacity 相近：</p>
+<p><span class="numbered-equation" id="equation-146"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi><mo>≈</mo><mn>0</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">
+L\approx0.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 146">(146)</span></span></p>
+<p>如果一个 Gaussian 极薄、另一个突然极大，或者一个透明一个不透明，就会产生较大 penalty。</p>
+<p>它隐含一个局部平稳假设：</p>
+<blockquote>
+<p>同一个局部 surface patch 上的 Gaussian geometry 应该平滑变化。</p>
+</blockquote>
+<p>注意，这种 smoothness 只在 support neighborhood 上定义，因此它实际上也依赖几何引导采样得到的局部结构。</p>
+<hr />
+<h3 id="感知损失中的-vgg-feature-loss">6.12 感知损失中的 VGG feature loss</h3>
+<p>像素 L1：</p>
+<p><span class="numbered-equation" id="equation-147"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="postfix">∥</mo><mover><mi>I</mi><mo accent="true">̂</mo></mover><mo>−</mo><mi>I</mi><msub><mo stretchy="false" form="postfix">∥</mo><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">
+\|\hat I-I\|_1
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 147">(147)</span></span></p>
+<p>要求像素颜色逐点接近。</p>
+<p>但大基线 NVS 中，即使几何大体正确，小量错位也会导致 L1 很大。</p>
+<p>VGG feature：</p>
+<p><span class="numbered-equation" id="equation-148"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi>l</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>I</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+\phi_l(I)
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 148">(148)</span></span></p>
+<p>对局部纹理、形状和语义具有一定不变性。</p>
+<p>因此：</p>
+<p><span class="numbered-equation" id="equation-149"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="postfix">∥</mo><msub><mi>ϕ</mi><mi>l</mi></msub><mo stretchy="false" form="prefix">(</mo><mover><mi>I</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msub><mi>ϕ</mi><mi>l</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>I</mi><mo stretchy="false" form="postfix">)</mo><msubsup><mo stretchy="false" form="postfix">∥</mo><mn>2</mn><mn>2</mn></msubsup></mrow><annotation encoding="application/x-tex">
+\|\phi_l(\hat I)-\phi_l(I)\|_2^2
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 149">(149)</span></span></p>
+<p>更关心感知结构。</p>
+<hr />
+<h3 id="gram-matrix-是什么为什么能约束纹理">6.13 Gram matrix 是什么？为什么能约束纹理？</h3>
+<p>假设某层 VGG feature：</p>
+<p><span class="numbered-equation" id="equation-150"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mo>∈</mo><msup><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mrow><mi>C</mi><mo>×</mo><mi>H</mi><mi>W</mi></mrow></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+F\in\mathbb R^{C\times HW}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 150">(150)</span></span></p>
+<p>Gram matrix：</p>
+<p><span class="numbered-equation" id="equation-151"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>G</mi><mo>=</mo><mi>F</mi><msup><mi>F</mi><mi>T</mi></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+G=FF^T.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 151">(151)</span></span></p>
+<p>其中：</p>
+<p><span class="numbered-equation" id="equation-152"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>G</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>=</mo><munder><mo>∑</mo><mi>p</mi></munder><msub><mi>F</mi><mrow><mi>i</mi><mo>,</mo><mi>p</mi></mrow></msub><msub><mi>F</mi><mrow><mi>j</mi><mo>,</mo><mi>p</mi></mrow></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+G_{ij}=\sum_p F_{i,p}F_{j,p}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 152">(152)</span></span></p>
+<p>它描述不同 feature channel 之间的相关性。</p>
+<p>它弱化了严格空间位置，而保留纹理统计，因此在风格迁移（style transfer）中非常经典。</p>
+<p>论文使用：</p>
+<p><span class="numbered-equation" id="equation-153"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="postfix">∥</mo><msub><mi>G</mi><mi>l</mi></msub><mo stretchy="false" form="prefix">(</mo><mover><mi>I</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msub><mi>G</mi><mi>l</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>I</mi><mo stretchy="false" form="postfix">)</mo><msubsup><mo stretchy="false" form="postfix">∥</mo><mi>F</mi><mn>2</mn></msubsup></mrow><annotation encoding="application/x-tex">
+\|G_l(\hat I)-G_l(I)\|_F^2
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 153">(153)</span></span></p>
+<p>帮助目标渲染保持更接近真实图像的纹理统计。</p>
+<hr />
+<h3 id="psnr-的数学意义">6.14 PSNR 的数学意义</h3>
+<p>均方误差（Mean Squared Error, MSE）：</p>
+<p><span class="numbered-equation" id="equation-154"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="normal"><mi>M</mi><mi>S</mi><mi>E</mi></mstyle><mo>=</mo><mfrac><mn>1</mn><mi>M</mi></mfrac><munder><mo>∑</mo><mi>p</mi></munder><mo stretchy="false" form="prefix">(</mo><msub><mi>I</mi><mi>p</mi></msub><mo>−</mo><msub><mover><mi>I</mi><mo accent="true">̂</mo></mover><mi>p</mi></msub><msup><mo stretchy="false" form="postfix">)</mo><mn>2</mn></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\mathrm{MSE}
+=
+\frac1M\sum_p(I_p-\hat I_p)^2.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 154">(154)</span></span></p>
+<p>若像素归一化到 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0,1]</annotation></semantics></math>：</p>
+<p><span class="numbered-equation" id="equation-155"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="normal"><mi>P</mi><mi>S</mi><mi>N</mi><mi>R</mi></mstyle><mo>=</mo><mn>10</mn><msub><mo>log</mo><mn>10</mn></msub><mfrac><mn>1</mn><mstyle mathvariant="normal"><mi>M</mi><mi>S</mi><mi>E</mi></mstyle></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\mathrm{PSNR}
+=10\log_{10}\frac{1}{\mathrm{MSE}}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 155">(155)</span></span></p>
+<p>因此 PSNR +3 dB，大致意味着 MSE 减半：</p>
+<p><span class="numbered-equation" id="equation-156"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>10</mn><msub><mo>log</mo><mn>10</mn></msub><mn>2</mn><mo>≈</mo><mn>3.01</mn><mspace width="0.167em"></mspace><mstyle mathvariant="normal"><mi>d</mi><mi>B</mi></mstyle><mi>.</mi></mrow><annotation encoding="application/x-tex">
+10\log_{10}2\approx3.01\,\mathrm{dB}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 156">(156)</span></span></p>
+<p>所以 InfiniSplat 在某些数据集上 +3~4 dB 的改善是比较显著的。</p>
+<hr />
+<h3 id="ssim-与-lpips-分别看什么">6.15 SSIM 与 LPIPS 分别看什么？</h3>
+<table>
+<thead>
+<tr class="header">
+<th>指标</th>
+<th>比较方式</th>
+<th>主要关注</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>PSNR</strong></td>
+<td>基于两张图像之间的像素均方误差（MSE）衡量重建质量</td>
+<td>像素重建的准确程度</td>
+</tr>
+<tr class="even">
+<td><strong>SSIM</strong>（结构相似度）</td>
+<td>比较局部亮度、对比度和结构</td>
+<td>局部结构相似性，相比单纯 MSE 更关注视觉结构</td>
+</tr>
+<tr class="odd">
+<td><strong>LPIPS</strong>（感知距离）</td>
+<td>将两张图像输入预训练深度网络，比较特征距离</td>
+<td>深层特征所反映的感知差异</td>
+</tr>
+</tbody>
+</table>
+<p>论文同时报告这三项指标，从<strong>像素重建、局部结构和深层感知</strong>三个角度比较，比单独使用 PSNR 更全面。</p>
+<h2 id="总结">7. 总结</h2>
+<p>现有单图前馈三维高斯方法通常在固定像素中心预测高斯，因此二维规则采样并不对应均匀、连续的三维表面采样，大幅视点变化后会暴露裂缝与碎片。InfiniSplat 用单目深度反投影估计局部三维表面积，按照面积自适应地采样二维支撑点，再在任意支撑位置查询 DINO 和 CNN 特征，通过共享隐式 MLP 预测高斯参数残差。这样高斯分布更符合局部表面结构，并在跨数据集大基线新视图合成中获得更稳定的结构和更好的图像指标。</p>
+<blockquote>
+<p><strong>去掉几何引导采样（Geometry-guided Sampling）的数值下降其实远小于去掉 DINO 的下降</strong>。因此，“表面对齐表示”是论文最漂亮的 conceptual contribution，但模型跨数据集泛化能力的最大实际来源之一，很可能仍然是强大的预训练视觉语义先验。</p>
+</blockquote>
+<h2 id="论文写作学习">8. 论文写作学习</h2>
+<p>InfiniSplat 的写法有一个非常值得学的模式：</p>
+<div class="research-flow">
+<div class="research-flow-step">
+现象：near-view 很好，但 large-baseline 会裂
+</div>
+<div class="research-flow-arrow" aria-hidden="true">
+↓
+</div>
+<div class="research-flow-step">
+诊断：不是单纯 network capacity，而是 pixel-aligned representation
+</div>
+<div class="research-flow-arrow" aria-hidden="true">
+↓
+</div>
+<div class="research-flow-step">
+提出目标：pixel-aligned → surface-aligned
+</div>
+<div class="research-flow-arrow" aria-hidden="true">
+↓
+</div>
+<div class="research-flow-step">
+产生两个技术要求：<br>1. support 应该跟 surface 走<br>2. decoder 必须支持 irregular support
+</div>
+<div class="research-flow-arrow" aria-hidden="true">
+↓
+</div>
+<div class="research-flow-step">
+对应两个模块：<br>1. geometry-guided sampling<br>2. implicit Gaussian decoding
+</div>
+<div class="research-flow-arrow" aria-hidden="true">
+↓
+</div>
+<div class="research-flow-step">
+实验验证每个模块 + large-baseline qualitative evidence
+</div>
+</div>
+<p>这是比“我们用了 A+B+C 所以更好”更成熟的研究叙事。</p>
+      </article>
+    </div>
+  </main>
+
+  <div class="article-lightbox" id="articleLightbox" hidden role="dialog" aria-modal="true" aria-label="图片预览">
+    <button class="article-lightbox-backdrop" type="button" data-close aria-label="关闭预览"></button>
+    <div class="article-lightbox-panel">
+      <button class="article-lightbox-close" type="button" data-close aria-label="关闭">×</button>
+      <button class="article-lightbox-nav article-lightbox-prev" type="button" data-prev aria-label="上一张">‹</button>
+      <img id="articleLightboxImage" src="" alt="" />
+      <button class="article-lightbox-nav article-lightbox-next" type="button" data-next aria-label="下一张">›</button>
+      <p id="articleLightboxCount" class="article-lightbox-count"></p>
+    </div>
+  </div>
+
+  <footer class="footer"><p>© <span id="year"></span> Huiqing Zhang.</p></footer>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script src="../../article-gallery.js?v=20261102-2"></script>
+</body>
+</html>

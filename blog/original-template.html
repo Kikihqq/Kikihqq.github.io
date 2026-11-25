@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>初始笔记</title>
+  <link rel="stylesheet" href="$blog-root$../assets/css/style.css" />
+  <link rel="stylesheet" href="$blog-root$article.css?v=20261110-3" />
+</head>
+<body>
+  <main class="article-shell">
+    <div class="article-topbar">
+      <a href="$article-url$">← 返回博客文章</a>
+      <a class="original-notes-link" href="$original-file$" download>下载 Markdown ↓</a>
+    </div>
+    <div class="original-notes-layout$if(table-of-contents)$ article-layout$endif$">
+      $if(table-of-contents)$
+      <aside class="article-sidebar original-notes-sidebar" aria-label="笔记目录">
+        <p class="article-sidebar-label">目录</p>
+        $table-of-contents$
+      </aside>
+      $endif$
+      <article class="article-content">$body$</article>
+    </div>
+  </main>
+</body>
+</html>

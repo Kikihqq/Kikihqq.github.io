@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="360" viewBox="0 0 800 360" role="img" aria-labelledby="title desc">
+<title id="title">Imagen：文本条件与级联扩散</title><desc id="desc">文本经冻结的 T5-XXL 编码后同时为三个扩散阶段提供条件。64 像素图像逐级生成至 256 和 1024 像素。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#95707a"/></marker></defs>
+<style>text{font-family:Arial,'Microsoft YaHei',sans-serif;fill:#51474b;font-size:17px}.small{font-size:14px;fill:#756b70}.label{font-size:13px;letter-spacing:2px;fill:#946875}.box{fill:#f8f1f2;stroke:#dbc7cd;stroke-width:1.5}.flow{fill:none;stroke:#95707a;stroke-width:1.8;marker-end:url(#arrow)}.cond{fill:none;stroke:#95707a;stroke-width:1.5;stroke-dasharray:5 4;marker-end:url(#arrow)}</style>
+<rect width="800" height="360" fill="#fff"/>
+<text x="30" y="34" class="label">IMAGEN · 2022 · 文生图</text>
+<rect class="box" x="30" y="65" width="150" height="58" rx="12"/><text x="105" y="100" text-anchor="middle">文本提示词</text>
+<path class="flow" d="M180 94H230"/>
+<rect class="box" x="230" y="65" width="240" height="58" rx="12"/><text x="350" y="89" text-anchor="middle">冻结的 T5-XXL</text><text x="350" y="111" text-anchor="middle" class="small">文本嵌入 / 条件表示</text>
+<path class="cond" d="M350 123V154H140V196"/><path class="cond" d="M350 154H400V196"/><path class="cond" d="M400 154H660V196"/>
+<text x="535" y="140" class="small">同一文本条件注入各阶段</text>
+<rect class="box" x="30" y="198" width="220" height="76" rx="12"/><text x="140" y="228" text-anchor="middle">基础扩散生成器</text><text x="140" y="254" text-anchor="middle" class="small">噪声 → 64 × 64 图像</text>
+<rect class="box" x="290" y="198" width="220" height="76" rx="12"/><text x="400" y="228" text-anchor="middle">超分辨率扩散 ①</text><text x="400" y="254" text-anchor="middle" class="small">64 × 64 → 256 × 256</text>
+<rect class="box" x="550" y="198" width="220" height="76" rx="12"/><text x="660" y="228" text-anchor="middle">超分辨率扩散 ②</text><text x="660" y="254" text-anchor="middle" class="small">256 × 256 → 1024 × 1024</text>
+<path class="flow" d="M250 236H288"/><path class="flow" d="M510 236H548"/>
+<text x="30" y="318" class="small">实线：图像生成流　·　虚线：文本条件　·　每个扩散阶段均包含迭代采样</text>
+</svg>

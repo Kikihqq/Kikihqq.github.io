@@ -1,0 +1,38 @@
+.gpt-timeline {
+  overflow-x: auto;
+  padding: 4px 3px 14px;
+  scroll-snap-type: x proximity;
+}
+.article-content .gpt-timeline ol {
+  display: flex;
+  width: max-content;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.article-content .gpt-timeline li {
+  width: 11.5rem;
+  margin: 0;
+  padding: 10px 12px;
+  border-top: 3px solid var(--article-accent);
+  background: var(--article-soft);
+  scroll-snap-align: start;
+  font: .84rem/1.5 var(--sans);
+}
+.gpt-timeline a { color: var(--ink); font-weight: 700; }
+.gpt-timeline span { display: block; }
+.gpt-timeline .model-meta { margin: 4px 0; }
+.gpt-timeline:focus-visible, .gpt-diagram:focus-visible { outline: 2px solid var(--article-accent); }
+.article-content .gpt-diagram { margin: 18px 0; overflow-x: auto; }
+.article-content .gpt-diagram figure { margin: 0; }
+.article-content .gpt-diagram img {
+  width: 100%;
+  min-width: min(540px, 140vw);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.gpt-diagram figcaption { padding: 5px 8px; font-size: .8rem; }

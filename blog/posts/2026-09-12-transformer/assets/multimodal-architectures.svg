@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 400" role="img" aria-labelledby="title desc">
+<title id="title">视觉信号进入模型的三种方式</title><desc id="desc">根据 CLIP、Flamingo、LLaVA 论文重绘 · 每行是一个独立系统</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0 0L9 4L0 8Z" fill="#667589"/></marker></defs>
+<rect width="100%" height="100%" rx="18" fill="#f5f7fb"/>
+<g font-family="system-ui, PingFang SC, Microsoft YaHei, sans-serif" fill="#1f3045">
+<text x="26" y="42" font-size="27" font-weight="700">视觉信号进入模型的三种方式</text>
+<text x="26" y="70" font-size="18" font-weight="650">CLIP · 在相似度层对齐</text>
+<rect x="26" y="83" width="198" height="58" rx="9" fill="#e0eef7" stroke="#c5ceda"/>
+<text x="125" y="106" text-anchor="middle" font-size="17" font-weight="650">图像 / 文本</text>
+<text x="125" y="127" text-anchor="middle" font-size="14" fill="#394d64">成对采样</text>
+<path d="M224 112H246" stroke="#667589" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="251" y="83" width="198" height="58" rx="9" fill="#e0eef7" stroke="#c5ceda"/>
+<text x="350" y="106" text-anchor="middle" font-size="17" font-weight="650">独立图像 / 文本编码</text>
+<text x="350" y="127" text-anchor="middle" font-size="14" fill="#394d64">两路向量</text>
+<path d="M449 112H471" stroke="#667589" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="476" y="83" width="198" height="58" rx="9" fill="#e0eef7" stroke="#c5ceda"/>
+<text x="575" y="106" text-anchor="middle" font-size="17" font-weight="650">归一化与点积</text>
+<text x="575" y="127" text-anchor="middle" font-size="14" fill="#394d64">对比学习对齐</text>
+<path d="M674 112H696" stroke="#667589" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="701" y="83" width="198" height="58" rx="9" fill="#e0eef7" stroke="#c5ceda"/>
+<text x="800" y="106" text-anchor="middle" font-size="17" font-weight="650">相似度</text>
+<text x="800" y="127" text-anchor="middle" font-size="14" fill="#394d64">检索或零样本分类</text>
+<text x="26" y="170" font-size="18" font-weight="650">Flamingo · 语言层交叉读取</text>
+<rect x="26" y="183" width="198" height="58" rx="9" fill="#e4f0e8" stroke="#c5ceda"/>
+<text x="125" y="206" text-anchor="middle" font-size="17" font-weight="650">图像或视频</text>
+<text x="125" y="227" text-anchor="middle" font-size="14" fill="#394d64">文本单独进入语言模型</text>
+<path d="M224 212H246" stroke="#667589" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="251" y="183" width="198" height="58" rx="9" fill="#e4f0e8" stroke="#c5ceda"/>
+<text x="350" y="206" text-anchor="middle" font-size="17" font-weight="650">视觉编码 + Resampler</text>
+<text x="350" y="227" text-anchor="middle" font-size="14" fill="#394d64">压缩视觉序列</text>
+<path d="M449 212H471" stroke="#667589" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="476" y="183" width="198" height="58" rx="9" fill="#e4f0e8" stroke="#c5ceda"/>
+<text x="575" y="206" text-anchor="middle" font-size="17" font-weight="650">带门控的交叉注意力</text>
+<text x="575" y="227" text-anchor="middle" font-size="14" fill="#394d64">插入冻结的语言模型</text>
+<path d="M674 212H696" stroke="#667589" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="701" y="183" width="198" height="58" rx="9" fill="#e4f0e8" stroke="#c5ceda"/>
+<text x="800" y="206" text-anchor="middle" font-size="17" font-weight="650">生成文本</text>
+<text x="800" y="227" text-anchor="middle" font-size="14" fill="#394d64">支持交错的图文示例</text>
+<text x="26" y="270" font-size="18" font-weight="650">LLaVA · 视觉 token 与文本拼接</text>
+<rect x="26" y="283" width="198" height="58" rx="9" fill="#f3e4ec" stroke="#c5ceda"/>
+<text x="125" y="306" text-anchor="middle" font-size="17" font-weight="650">图像</text>
+<text x="125" y="327" text-anchor="middle" font-size="14" fill="#394d64">文本提示单独嵌入</text>
+<path d="M224 312H246" stroke="#667589" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="251" y="283" width="198" height="58" rx="9" fill="#f3e4ec" stroke="#c5ceda"/>
+<text x="350" y="306" text-anchor="middle" font-size="17" font-weight="650">CLIP ViT + 投影</text>
+<text x="350" y="327" text-anchor="middle" font-size="14" fill="#394d64">映射至语言模型宽度</text>
+<path d="M449 312H471" stroke="#667589" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="476" y="283" width="198" height="58" rx="9" fill="#f3e4ec" stroke="#c5ceda"/>
+<text x="575" y="306" text-anchor="middle" font-size="17" font-weight="650">因果语言模型</text>
+<text x="575" y="327" text-anchor="middle" font-size="14" fill="#394d64">读取视觉与文本 token</text>
+<path d="M674 312H696" stroke="#667589" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="701" y="283" width="198" height="58" rx="9" fill="#f3e4ec" stroke="#c5ceda"/>
+<text x="800" y="306" text-anchor="middle" font-size="17" font-weight="650">生成文本</text>
+<text x="800" y="327" text-anchor="middle" font-size="14" fill="#394d64">可用指令数据微调</text>
+<text x="26" y="385" font-size="15" fill="#394d64">根据 CLIP、Flamingo、LLaVA 论文重绘 · 每行是一个独立系统</text>
+</g></svg>

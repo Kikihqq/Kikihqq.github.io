@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="从因果语言建模出发，沿着预训练、上下文学习、指令对齐、多模态与推理训练，读懂 GPT 各代公开的架构、训练数据和评测。" />
+  <title>从 GPT‑1 到 GPT‑6：语言模型怎样学习、推理和使用工具 — Huiqing Zhang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../../assets/css/style.css?v=20261102-2" />
+  <link rel="stylesheet" href="../../article.css?v=20261125-3" />
+  <link rel="icon" type="image/svg+xml" href="../../../assets/images/favicon.svg" />
+</head>
+<body data-topic="Generative AI">
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../../../index.html#top" class="nav-brand">Huiqing&nbsp;Zhang</a>
+      <ul class="nav-links">
+        <li><a href="../../../index.html#about">About</a></li>
+        <li><a href="../../../index.html#publications">Publications</a></li>
+        <li><a href="../../../cv.html">CV</a></li>
+        <li><a href="../../index.html" class="active">Blog</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="article-shell">
+    <div class="article-topbar">
+      <a href="../../index.html" class="back-link">← 返回全部文章</a>
+      <a class="original-notes-link" href="assets/original-notes.preview.html" target="_blank" rel="noopener">初始笔记 ↗</a>
+    </div>
+    <header class="article-header">
+      <p class="article-kicker">RESEARCH NOTES</p>
+      <h1>从 GPT‑1 到 GPT‑6：语言模型怎样学习、推理和使用工具</h1>
+      <time class="article-date" datetime="2026-11-03">2026-11-03</time>
+      <p class="article-deck">从因果语言建模出发，沿着预训练、上下文学习、指令对齐、多模态与推理训练，读懂 GPT 各代公开的架构、训练数据和评测。</p>
+          </header>
+
+
+
+    <div class="article-layout">
+      <aside class="article-sidebar" aria-label="文章目录">
+        <p class="article-sidebar-label">CONTENTS</p>
+                <ul>
+                <li><a href="#时间轴">时间轴</a></li>
+                <li><a href="#gpt1-至-gpt3怎样把预训练能力用到新任务">GPT‑1 至 GPT‑3：怎样把预训练能力用到新任务</a></li>
+                <li><a href="#gpt3.5-与对齐怎样把续写器变成助手">GPT‑3.5 与对齐：怎样把续写器变成助手</a></li>
+                <li><a href="#gpt4-家族视觉长上下文与两条扩展路线">GPT‑4 家族：视觉、长上下文与两条扩展路线</a></li>
+                <li><a href="#o-系列与-gpt5把推理时间变成一个可控变量">o 系列与 GPT‑5：把推理时间变成一个可控变量</a></li>
+                <li><a href="#gpt6从作答到在软件里执行任务">GPT‑6：从作答到在软件里执行任务</a></li>
+                <li><a href="#放到语言模型的发展史里读">放到语言模型的发展史里读</a></li>
+                </ul>
+              </aside>
+      <article class="article-content">
+<link rel="stylesheet" href="assets/gpt-notes.css">
+<h2 id="时间轴">时间轴</h2>
+<p>GPT‑1 在任务数据上更新权重，GPT‑3 把任务示例放进提示，InstructGPT 把人类偏好放进后训练。到了 GPT‑6 Astra，一次回答还可能包含屏幕观察、工具调用与结果验证。比较这些变化时，可以分别问三件事：<strong>权重怎样得到、推理时给了什么信息、模型能否向外部环境采取行动。</strong></p>
+<div class="gpt-timeline" role="region" aria-label="GPT 系列时间轴，可横向滚动" tabindex="0">
+  <ol>
+    <li><a href="#gpt1">GPT‑1</a><span class="model-meta">OpenAI · 2018.06</span><span>生成式预训练 → 任务微调</span></li>
+    <li><a href="#gpt2">GPT‑2</a><span class="model-meta">OpenAI · 2019.02</span><span>放大预训练，直接做零样本任务</span></li>
+    <li><a href="#gpt3">GPT‑3</a><span class="model-meta">OpenAI · 2020.05</span><span>175B 参数，上下文学习</span></li>
+    <li><a href="#codex">Codex</a><span class="model-meta">OpenAI · 2021.07</span><span>代码补全与可执行评测</span></li>
+    <li><a href="#instructgpt">InstructGPT</a><span class="model-meta">OpenAI · 2022.01</span><span>从人类偏好学习指令行为</span></li>
+    <li><a href="#gpt35">GPT‑3.5 / ChatGPT</a><span class="model-meta">OpenAI · 2022.11</span><span>把对话纳入训练与产品接口</span></li>
+    <li><a href="#gpt4">GPT‑4</a><span class="model-meta">OpenAI · 2023.03</span><span>图像输入与可预测的训练扩展</span></li>
+    <li><a href="#gpt4-long">GPT‑4 Turbo</a><span class="model-meta">OpenAI · 2023.11</span><span>128K 上下文与函数调用</span></li>
+    <li><a href="#gpt4o">GPT‑4o</a><span class="model-meta">OpenAI · 2024.05</span><span>端到端图像、语音与文本</span></li>
+    <li><a href="#o-series">o1</a><span class="model-meta">OpenAI · 2024.09</span><span>推理训练与作答预算</span></li>
+    <li><a href="#gpt45">GPT‑4.5</a><span class="model-meta">OpenAI · 2025.02</span><span>扩展无监督训练</span></li>
+    <li><a href="#gpt4-long">GPT‑4.1</a><span class="model-meta">OpenAI · 2025.04</span><span>百万 token 上下文</span></li>
+    <li><a href="#gpt-oss">gpt‑oss</a><span class="model-meta">OpenAI · 2025.08</span><span>开放权重与 MoE 配置</span></li>
+    <li><a href="#gpt5">GPT‑5</a><span class="model-meta">OpenAI · 2025.08</span><span>快速回答、深度推理与路由</span></li>
+    <li><a href="#gpt5-variants">GPT‑5.6</a><span class="model-meta">OpenAI · 2026.07</span><span>Sol、Terra、Luna 分档</span></li>
+    <li><a href="#gpt6">GPT‑6 Astra</a><span class="model-meta">OpenAI · 2026.09.03</span><span>跨软件执行、检查与修正</span></li>
+    <li><a href="#gpt6-sol-luna">GPT‑6 Sol / Luna</a><span class="model-meta">OpenAI · 2026.09.22</span><span>通用推理与高频任务分档</span></li>
+    <li><a href="#gpt61-sol">GPT‑6.1 Sol</a><span class="model-meta">OpenAI · 2026.09.29</span><span>持续编码与跨软件执行</span></li>
+    <li><a href="#gpt61-terra">GPT‑6.1 Terra</a><span class="model-meta">OpenAI · 2026.10.26</span><span>视觉定位与计算机操作</span></li>
+    <li><a href="#gpt6-rosalind">GPT‑6 Rosalind Research</a><span class="model-meta">OpenAI · 2026.10.30</span><span>生命科学研究专门版</span></li>
+  </ol>
+</div>
+<h2 id="gpt1-至-gpt3怎样把预训练能力用到新任务">GPT‑1 至 GPT‑3：怎样把预训练能力用到新任务</h2>
+<table>
+<thead>
+<tr class="header">
+<th>模型</th>
+<th>新任务的信息从哪里来</th>
+<th>做新任务时改权重吗</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>GPT‑1</td>
+<td>下游标注集与任务输出头</td>
+<td>监督微调时更新</td>
+</tr>
+<tr class="even">
+<td>GPT‑2</td>
+<td>任务描述或能让文本续写对应到任务的前缀</td>
+<td>论文零样本协议不更新</td>
+</tr>
+<tr class="odd">
+<td>GPT‑3</td>
+<td>指令，以及可选的少数输入—输出示例</td>
+<td>上下文学习只改变本次输入</td>
+</tr>
+</tbody>
+</table>
+<div class="gpt-diagram" tabindex="0">
+<figure>
+<img src="assets/causal-and-transfer.svg" alt="GPT‑1、GPT‑2 与 GPT‑3 使用同一类因果目标，但任务信息在不同阶段进入模型。" /><figcaption aria-hidden="true">GPT‑1、GPT‑2 与 GPT‑3 使用同一类因果目标，但任务信息在不同阶段进入模型。</figcaption>
+</figure>
+</div>
+<h3 id="gpt1">GPT‑1</h3>
+<p><span class="model-meta">OpenAI · 2018.06</span></p>
+<div class="gpt-diagram" tabindex="0">
+<figure>
+<img src="assets/gpt-1-architecture.svg" alt="GPT‑1 用同一解码器接词表预测头或任务头。" /><figcaption aria-hidden="true">GPT‑1 用同一解码器接词表预测头或任务头。</figcaption>
+</figure>
+</div>
+<ul>
+<li><strong>功能</strong>　以同一个文本骨干适配分类、文本蕴含、相似度和阅读理解。</li>
+<li><strong>预训练任务</strong>　根据此前 token 预测下一 token。监督微调时用末位表示接任务头，并可加语言建模辅助损失。</li>
+<li><strong>训练数据</strong>　BooksCorpus，超过 7,000 本书。OpenAI 首发记载约 5 GB 文本，论文未给出实际采样 token 数。</li>
+<li><strong>训练超参</strong>　预训练 100 个 epoch，连续片段长 512 token，每批 64 段。Adam 峰值学习率 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2.5</mn><mo>×</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>4</mn></mrow></msup></mrow><annotation encoding="application/x-tex">2.5\times10^{-4}</annotation></semantics></math>，预热 2,000 步后余弦衰减。骨干为 12 层、宽度 768、12 个注意力头，FFN 宽度 3072。</li>
+<li><strong>训练硬件</strong>　OpenAI 首发记载在一台 8 GPU 机器上预训练约一个月。 <a href="https://openai.com/index/language-unsupervised/#compute">GPT‑1 Launch, Compute</a></li>
+<li><strong>推理任务</strong>　按任务序列化输入。多选问答分别给每个候选项打分，文本蕴含和分类从任务头读取标签。论文在 12 项下游任务中有 9 项超过当时采用的对照结果。</li>
+</ul>
+<div class="article-equation">
+<p><span class="numbered-equation" id="equation-1"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mstyle mathvariant="script"><mi>ℒ</mi></mstyle><mstyle mathvariant="normal"><mi>L</mi><mi>M</mi></mstyle></msub><mo>=</mo><mo>−</mo><munder><mo>∑</mo><mi>t</mi></munder><mo>log</mo><msub><mi>p</mi><mi>θ</mi></msub><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>∣</mo><msub><mi>x</mi><mrow><mo>&lt;</mo><mi>t</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\mathcal{L}_{\mathrm{LM}}=-\sum_t\log p_\theta(x_t\mid x_{&lt;t}).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 1">(1)</span></span></p>
+</div>
+<p>和 BERT 相比，GPT‑1 的注意力有因果方向。BERT 在预测被遮 token 时能利用它两侧的上下文。 <a href="https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf">GPT‑1 Paper, Sections 3–4, Figure 1, and Tables 1–3</a> · <a href="https://arxiv.org/abs/1810.04805">BERT Paper, Section 3</a></p>
+<h3 id="gpt2">GPT‑2</h3>
+<p><span class="model-meta">OpenAI · 2019.02</span></p>
+<div class="gpt-diagram" tabindex="0">
+<figure>
+<img src="assets/gpt-2-architecture.svg" alt="GPT‑2 在子层输入侧与整个解码器末端使用归一化。" /><figcaption aria-hidden="true">GPT‑2 在子层输入侧与整个解码器末端使用归一化。</figcaption>
+</figure>
+</div>
+<ul>
+<li><strong>功能</strong>　用文本前缀把语言建模接口用于问答、摘要和翻译。</li>
+<li><strong>预训练任务</strong>　保持下一 token 预测。字节级 BPE 词表有 50,257 项，归一化改到子层输入侧，最后一层后再加 LayerNorm。</li>
+<li><strong>训练数据</strong>　WebText 由 Reddit 上达到筛选阈值的外链页面构建，清理后超过 800 万篇文档、约 40 GB。</li>
+<li><strong>训练超参</strong>　上下文 1024 token，论文给出 batch size 512。学习率在 5% WebText 验证集上选择，论文未列具体值。最大档为 48 层、宽度 1600、约 1.54B 参数。</li>
+<li><strong>训练硬件</strong>　OpenAI 原论文未列硬件。Andrej Karpathy 的公开复盘记录了 32 枚 TPU v3 芯片和 168 小时训练。 <a href="https://github.com/karpathy/nanochat/blob/master/dev/LEADERBOARD.md">GPT‑2 Training Retrospective</a></li>
+<li><strong>推理任务</strong>　论文按零样本协议固定权重，用前缀触发文本续写或对候选答案评分。在 8 个语言建模数据集中的 7 个报告当时更好的结果。</li>
+</ul>
+<p><a href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf">GPT‑2 Paper, Sections 2–4</a></p>
+<h3 id="gpt3">GPT‑3</h3>
+<p><span class="model-meta">OpenAI · 2020.05</span></p>
+<div class="gpt-diagram" tabindex="0">
+<figure>
+<img src="assets/gpt-3-architecture.svg" alt="GPT‑3 的 175B 解码器交替使用稠密和局部带状注意力。" /><figcaption aria-hidden="true">GPT‑3 的 175B 解码器交替使用稠密和局部带状注意力。</figcaption>
+</figure>
+</div>
+<ul>
+<li><strong>功能</strong>　从提示里的少量示例学习标签和输出格式，完成翻译、问答和文本补全等任务。</li>
+<li><strong>预训练任务</strong>　自回归预测下一个 token。GPT‑2 式骨干在各层交替使用稠密和局部带状稀疏注意力。</li>
+<li><strong>训练数据</strong>　从过滤的 Common Crawl、WebText2、Books1、Books2 和 Wikipedia 按权重采样。175B 版训练约 300B token。</li>
+<li><strong>训练超参</strong>　175B 版为 96 层、宽度 12,288、96 个注意力头，上下文 2048。全局 batch 从 32K 逐步增至 3.2M token，峰值学习率 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6</mn><mo>×</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>5</mn></mrow></msup></mrow><annotation encoding="application/x-tex">6\times10^{-5}</annotation></semantics></math>。采用 Adam，前 375M token 线性预热，余弦衰减至峰值的 10%，梯度范数上限 1.0，权重衰减 0.1。</li>
+<li><strong>训练硬件</strong>　在 Microsoft 提供的高带宽集群上使用 NVIDIA V100，沿模型深度和宽度并行。论文未列该次运行的卡数。</li>
+<li><strong>推理任务</strong>　zero-shot 只给任务说明，one-shot 给一个示例，few-shot 给多个示例。三者都固定权重。LAMBADA 的准确率依次为 76.2%、72.5%、86.4%，不同设置下的提示格式也有差别。</li>
+</ul>
+<p><a href="https://arxiv.org/html/2005.14165">GPT‑3 Paper, Sections 2–5 and Appendix B</a></p>
+<h2 id="gpt3.5-与对齐怎样把续写器变成助手">GPT‑3.5 与对齐：怎样把续写器变成助手</h2>
+<table>
+<thead>
+<tr class="header">
+<th>环节</th>
+<th>给模型或训练器什么</th>
+<th>得到什么</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>预训练</td>
+<td>文本、代码等序列</td>
+<td>会预测后续 token 的基础模型</td>
+</tr>
+<tr class="even">
+<td>监督微调（SFT）</td>
+<td>指令及期望回答</td>
+<td>学习对话、指令格式和示范行为</td>
+</tr>
+<tr class="odd">
+<td>偏好训练（InstructGPT）</td>
+<td>同一提示下多条回答的人类排序</td>
+<td>奖励模型，再用 PPO 优化回答策略</td>
+</tr>
+<tr class="even">
+<td>上下文学习</td>
+<td>当前提示中的指令和示例</td>
+<td>本次推理的条件发生变化</td>
+</tr>
+</tbody>
+</table>
+<div class="gpt-diagram" tabindex="0">
+<figure>
+<img src="assets/rlhf.svg" alt="InstructGPT 的示范、比较标注与 PPO 三阶段。" /><figcaption aria-hidden="true">InstructGPT 的示范、比较标注与 PPO 三阶段。</figcaption>
+</figure>
+</div>
+<h3 id="codex">Codex：代码任务的早期分支</h3>
+<p><span class="model-meta">OpenAI · 2021.07</span></p>
+<div class="gpt-diagram" tabindex="0">
+<figure>
+<img src="assets/codex-architecture.svg" alt="Codex 以 GPT‑3 系列为骨干做 Python 自回归训练，并用同一模型补全函数。" /><figcaption aria-hidden="true">Codex 以 GPT‑3 系列为骨干做 Python 自回归训练，并用同一模型补全函数。</figcaption>
+</figure>
+</div>
+<ul>
+<li><strong>功能</strong>　从自然语言说明生成 Python 函数或补全现有代码。</li>
+<li><strong>预训练任务</strong>　沿用 GPT‑3 的因果语言建模目标。主实验从预训练 GPT 权重出发，在 Python 代码上继续预测下一个 token。</li>
+<li><strong>训练数据</strong>　过滤后的公开 GitHub Python 语料约 159 GB。代码训练共采样约 100B token。</li>
+<li><strong>训练超参</strong>　沿用同规模 GPT 模型的学习率，线性预热 175 步后余弦衰减。Adam 的 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mn>1</mn></msub><mo>=</mo><mn>0.9</mn></mrow><annotation encoding="application/x-tex">\beta_1=0.9</annotation></semantics></math>、<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mn>2</mn></msub><mo>=</mo><mn>0.95</mn></mrow><annotation encoding="application/x-tex">\beta_2=0.95</annotation></semantics></math>、<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ϵ</mi><mo>=</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>8</mn></mrow></msup></mrow><annotation encoding="application/x-tex">\epsilon=10^{-8}</annotation></semantics></math>，权重衰减 0.1。</li>
+<li><strong>训练硬件</strong>　公开资料未给出训练加速器型号与卡数。</li>
+<li><strong>推理任务</strong>　HumanEval 提供函数签名与 docstring，用单元测试给采样结果评分。12B 研究模型在 164 道题上达 28.8% pass@1。pass@k 随可尝试的样本数变化。</li>
+</ul>
+<p><a href="https://arxiv.org/abs/2107.03374">Codex Paper, Section 3</a></p>
+<h3 id="instructgpt">InstructGPT</h3>
+<p><span class="model-meta">OpenAI · 2022.01</span></p>
+<ul>
+<li><strong>功能</strong>　通过人类示范和偏好排序改进指令遵循。</li>
+<li><strong>预训练任务</strong>　底座沿用 GPT‑3 的下一 token 预测。新增训练为监督微调（SFT）、6B 奖励模型（RM）和带 KL 约束的 PPO。</li>
+<li><strong>训练数据</strong>　SFT、RM、PPO 分别用约 13K、33K、31K 个训练提示。奖励阶段同一提示有多条候选回答。</li>
+<li><strong>训练超参</strong>　以 175B 档为例，SFT 为 16 个 epoch、batch 8、初始学习率 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>5.03</mn><mo>×</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>6</mn></mrow></msup></mrow><annotation encoding="application/x-tex">5.03\times10^{-6}</annotation></semantics></math>、残差 dropout 0.2。RM 训 1 个 epoch、batch 64、初始学习率 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>9</mn><mo>×</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>6</mn></mrow></msup></mrow><annotation encoding="application/x-tex">9\times10^{-6}</annotation></semantics></math>。PPO 跑 256K episodes，batch 512、minibatch 64、KL 系数 0.02。</li>
+<li><strong>训练硬件</strong>　GPT‑3 底座使用 V100。InstructGPT 论文未给出后训练加速器型号与卡数。</li>
+<li><strong>推理任务</strong>　给出 API 指令，由对齐后的策略生成回答。论文中的人工偏好比较显示，1.3B InstructGPT 在该提示分布中优于 175B 基础 GPT‑3。</li>
+</ul>
+<p><a href="https://arxiv.org/html/2203.02155">InstructGPT Paper, Section 3 and Appendix C</a></p>
+<h3 id="gpt35">GPT‑3.5 与早期 ChatGPT</h3>
+<p><span class="model-meta">OpenAI · 2022.11</span></p>
+<ul>
+<li><strong>功能</strong>　维持多轮对话、回应后续追问，GPT‑3.5 Turbo 将对话开放为 API。</li>
+<li><strong>预训练任务</strong>　OpenAI 说明 ChatGPT 从 GPT‑3.5 底座微调。公开训练说明集中在对话 SFT、人工回复排序和 PPO。底座预训练目标未具体披露。</li>
+<li><strong>训练数据</strong>　对话训练混合人工扮演两方写出的示范和转成对话格式的 InstructGPT 数据。规模未公开。</li>
+<li><strong>训练超参</strong>　公开资料未给出学习率、全局 batch size 与训练步数。</li>
+<li><strong>训练硬件</strong>　OpenAI 确认使用 Microsoft Azure AI 超算基础设施，未公布训练加速器型号与卡数。</li>
+<li><strong>推理任务</strong>　把历史与当前输入作为有角色的消息序列，生成助手回复。2023 年 3 月 API 首发采用同一类交互格式。</li>
+</ul>
+<p><a href="https://openai.com/index/chatgpt/">ChatGPT Launch and Methods</a> · <a href="https://openai.com/index/introducing-chatgpt-and-whisper-apis/">GPT‑3.5 Turbo API Launch</a></p>
+<h2 id="gpt4-家族视觉长上下文与两条扩展路线">GPT‑4 家族：视觉、长上下文与两条扩展路线</h2>
+<table>
+<thead>
+<tr class="header">
+<th>版本</th>
+<th>主要改进</th>
+<th>公开到什么程度</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>GPT‑4</td>
+<td>图文输入、文本输出。报告给出训练损失的规模预测</td>
+<td>Transformer 风格、下一 token 训练、数据来源类别、RLHF</td>
+</tr>
+<tr class="even">
+<td>GPT‑4 Turbo / 4.1</td>
+<td>更长上下文和改进的指令或代码处理</td>
+<td>接口规格及长上下文、代码等基准</td>
+</tr>
+<tr class="odd">
+<td>GPT‑4o</td>
+<td>同一模型处理文字、视觉与声音，支持端到端音频</td>
+<td>模态、数据类别、能力与安全评测</td>
+</tr>
+<tr class="even">
+<td>GPT‑4.5</td>
+<td>扩展无监督预训练，后训练着重交互行为</td>
+<td>扩展方向、对齐方法的公开描述及评测</td>
+</tr>
+</tbody>
+</table>
+<div class="gpt-diagram" tabindex="0">
+<figure>
+<img src="assets/gpt-4-interfaces.svg" alt="GPT‑4 和 GPT‑4o 的公开模型边界及模态对比，依据技术报告和发布资料绘制。" /><figcaption aria-hidden="true">GPT‑4 和 GPT‑4o 的公开模型边界及模态对比，依据技术报告和发布资料绘制。</figcaption>
+</figure>
+</div>
+<h3 id="gpt4">GPT‑4</h3>
+<p><span class="model-meta">OpenAI · 2023.03</span></p>
+<ul>
+<li><strong>功能</strong>　从文本或图像输入生成文本，可做读图、考试题和代码任务。</li>
+<li><strong>预训练任务</strong>　技术报告确认 Transformer 风格的下一 token 预测，以及 RLHF 后训练。</li>
+<li><strong>训练数据</strong>　公开和获许可的第三方数据。训练规模、数据构造和各来源比例未公开。</li>
+<li><strong>训练超参</strong>　技术报告未公开学习率、批量和训练步数。报告用较小训练实验预测大模型最终代码验证损失，也预测部分 HumanEval 表现。</li>
+<li><strong>训练硬件</strong>　技术报告未公开加速器型号、卡数或训练 FLOPs。</li>
+<li><strong>推理任务</strong>　处理图文题、专业考试题和自然语言指令。模拟 Uniform Bar Examination 的成绩约为参考分布前 10%，这个百分位依赖题目和评分协议。</li>
+</ul>
+<p><a href="https://arxiv.org/html/2303.08774">GPT‑4 Technical Report, Sections 2–6</a></p>
+<h3 id="gpt4-long">GPT‑4 Turbo 与 GPT‑4.1</h3>
+<p><span class="model-meta">OpenAI · 2023.11 / 2025.04</span></p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>版本</th>
+<th>功能</th>
+<th>预训练任务与数据规模</th>
+<th>训练超参与硬件</th>
+<th>推理任务</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>GPT‑4 Turbo</td>
+<td>128K 上下文，改进函数调用和 JSON 模式</td>
+<td>具体目标和规模未披露</td>
+<td>学习率、批量、加速器及卡数未披露</td>
+<td>在长文档上下文里问答，按结构输出或发起工具调用。 <a href="https://openai.com/index/new-models-and-developer-products-announced-at-devday/">GPT‑4 Turbo Launch</a></td>
+</tr>
+<tr class="even">
+<td>GPT‑4.1 / mini / nano</td>
+<td>系列支持约 100 万 token 上下文，分别覆盖质量、延迟和成本需求</td>
+<td>具体目标和各型号数据规模未披露</td>
+<td>学习率、批量、加速器及卡数未披露</td>
+<td>长文档检索与综合、代码修改、精确遵循指令。GPT‑4.1 在首发 SWE-bench Verified 中达 54.6%。 <a href="https://openai.com/index/gpt-4-1/">GPT‑4.1 Launch and Benchmarks</a></td>
+</tr>
+</tbody>
+</table>
+<p>窗口大小决定能放进多少 token。长上下文评测则测模型能否从干扰信息中找到所需内容。</p>
+<h3 id="gpt4o">GPT‑4o</h3>
+<p><span class="model-meta">OpenAI · 2024.05</span></p>
+<ul>
+<li><strong>功能</strong>　用一个端到端模型理解文本、图像和声音，生成文本或在相应端点生成音频和图像。</li>
+<li><strong>预训练任务</strong>　官方披露端到端跨模态训练。分模态的目标、损失与权重未公开。</li>
+<li><strong>训练数据</strong>　系统卡记载了公开及合作来源的文本、图像和音频等。模态比例和总量未公布。</li>
+<li><strong>训练超参</strong>　公开资料未给出学习率、全局 batch size 与训练步数。</li>
+<li><strong>训练硬件</strong>　公开资料未给出训练加速器型号与卡数。</li>
+<li><strong>推理任务</strong>　图文问答或实时语音对话。首发演示中语音响应最快约 232 ms，平均约 320 ms。</li>
+</ul>
+<p><a href="https://openai.com/index/hello-gpt-4o/">GPT‑4o Launch</a> · <a href="https://openai.com/index/gpt-4o-system-card/">GPT‑4o System Card</a></p>
+<h4 id="gpt4o-mini">GPT‑4o mini</h4>
+<p><span class="model-meta">OpenAI · 2024.07</span></p>
+<ul>
+<li><strong>功能</strong>　以较低成本提供文本和视觉推理。首发报告 MMLU 82%。</li>
+<li><strong>预训练任务</strong>　公开资料未给出可复现的预训练目标与损失配置。</li>
+<li><strong>训练数据</strong>　公开资料未给出训练语料规模。</li>
+<li><strong>训练超参</strong>　公开资料未给出学习率、全局 batch size 与训练步数。</li>
+<li><strong>训练硬件</strong>　公开资料未给出训练加速器型号与卡数。</li>
+<li><strong>推理任务</strong>　用文本或图像输入做问答、分类及工具调用。首发 API 接收文本与图像，生成文本。</li>
+</ul>
+<p><a href="https://openai.com/index/gpt-4o-mini-advancing-cost-efficient-intelligence/">GPT‑4o mini Launch</a></p>
+<h3 id="gpt45">GPT‑4.5</h3>
+<p><span class="model-meta">OpenAI · 2025.02</span></p>
+<ul>
+<li><strong>功能</strong>　通过扩大无监督训练改善知识覆盖、意图理解和对话协作。</li>
+<li><strong>预训练任务</strong>　官方确认扩展无监督学习，并采用监督微调和 RLHF。预训练损失细节未公布。</li>
+<li><strong>训练数据</strong>　发布资料未给出实际采样 token 数或语料构成比例。</li>
+<li><strong>训练超参</strong>　公开资料未给出学习率、全局 batch size 与训练步数。</li>
+<li><strong>训练硬件</strong>　公开资料未给出训练加速器型号与卡数。</li>
+<li><strong>推理任务</strong>　用于日常问答、写作及分析。首发 SimpleQA 表列准确率 62.5%、幻觉率 37.1%，对应短事实问答这一协议。</li>
+</ul>
+<p><a href="https://openai.com/index/introducing-gpt-4-5/">GPT‑4.5 Launch and Evaluation</a></p>
+<h2 id="o-系列与-gpt5把推理时间变成一个可控变量">o 系列与 GPT‑5：把推理时间变成一个可控变量</h2>
+<table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>改的是哪一层</th>
+<th>应记录的设置</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>扩展预训练</td>
+<td>模型在大量数据上的权重</td>
+<td>模型大小、实际 token 数、算力</td>
+</tr>
+<tr class="even">
+<td>推理后训练</td>
+<td>模型解决问题、验证答案的行为</td>
+<td>训练任务、奖励或验证方式、公开程度</td>
+</tr>
+<tr class="odd">
+<td>推理预算</td>
+<td>单次作答可消耗的计算</td>
+<td>推理档位、采样数、时限</td>
+</tr>
+<tr class="even">
+<td>系统路由</td>
+<td>请求交给哪条处理路径</td>
+<td>产品模式、路由、工具和执行环境</td>
+</tr>
+</tbody>
+</table>
+<div class="gpt-diagram" tabindex="0">
+<figure>
+<img src="assets/reasoning-and-tools.svg" alt="快速回答、推理与工具执行是系统层的不同路径。" /><figcaption aria-hidden="true">快速回答、推理与工具执行是系统层的不同路径。</figcaption>
+</figure>
+</div>
+<h3 id="o-series">o1、o3-mini、o3 与 o4-mini</h3>
+<p><span class="model-meta">OpenAI · 2024.09 / 2025.01 / 2025.04</span></p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>版本</th>
+<th>功能</th>
+<th>预训练任务与数据规模</th>
+<th>训练超参与硬件</th>
+<th>推理任务</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>o1</td>
+<td>强化学习训练解题策略，可在单次作答上增加测试计算</td>
+<td>底座目标与数据量未披露，官方说明推理强化学习随训练计算扩展</td>
+<td>奖励细节、学习率、批量和训练卡数未披露</td>
+<td>多步数学与代码推理。比较成绩时区分单次采样、多样本共识和重排序。 <a href="https://openai.com/index/learning-to-reason-with-llms/">Learning to Reason with LLMs</a></td>
+</tr>
+<tr class="even">
+<td>o3-mini · 2025.01</td>
+<td>侧重 STEM 推理及成本效率</td>
+<td>底座目标与数据量未披露</td>
+<td>学习率、批量、加速器及卡数未披露</td>
+<td>解决数学、科学和编程题，可配置推理档位。 <a href="https://openai.com/index/openai-o3-mini/">o3-mini Launch</a></td>
+</tr>
+<tr class="odd">
+<td>o3 · 2025.04</td>
+<td>结合视觉输入和工具做高难度推理</td>
+<td>底座目标与数据量未披露，官方描述了推理与工具使用的训练</td>
+<td>学习率、批量、加速器及卡数未披露</td>
+<td>读图，按需执行搜索或 Python，把工具输出纳入后续推理。 <a href="https://openai.com/index/introducing-o3-and-o4-mini/">o3 and o4-mini Launch</a></td>
+</tr>
+<tr class="even">
+<td>o4-mini · 2025.04</td>
+<td>在较小的推理模型上提供数学、代码和视觉能力</td>
+<td>底座目标与数据量未披露</td>
+<td>学习率、批量、加速器及卡数未披露</td>
+<td>面向高频 STEM、视觉与工具任务，可用更多测试计算作答。 <a href="https://openai.com/index/introducing-o3-and-o4-mini/">o3 and o4-mini Launch</a></td>
+</tr>
+</tbody>
+</table>
+<p>推理后训练会更新权重。测试时增加推理预算会改变同一个模型解题时能用的计算量。工具结果则为后续步骤增加了新输入。</p>
+<h3 id="gpt5">GPT‑5</h3>
+<p><span class="model-meta">OpenAI · 2025.08</span></p>
+<ul>
+<li><strong>功能</strong>　在 ChatGPT 中按难度和工具需求，分派到快速回答或 GPT‑5 thinking。</li>
+<li><strong>预训练任务</strong>　首发资料说明了路由、指令遵循、安全和减少迎合的训练，未给出完整底座预训练目标。</li>
+<li><strong>训练数据</strong>　首发报告未给出底座训练语料规模或实际采样 token 数。</li>
+<li><strong>训练超参</strong>　公开资料未给出学习率、全局 batch size 与训练步数。</li>
+<li><strong>训练硬件</strong>　公开资料未给出训练加速器型号与卡数。</li>
+<li><strong>推理任务</strong>　在日常问答、数学、图文理解、编码和工具任务中生成回答或发起工具调用。上方是官方首发产品的路由图。</li>
+</ul>
+<p><a href="https://openai.com/index/introducing-gpt-5/">GPT‑5 Launch and System Card</a></p>
+<h3 id="gpt5-variants">GPT‑5.1 至 GPT‑5.6</h3>
+<p><span class="model-meta">OpenAI · 2025.11–2026.07</span></p>
+<p>这些版本的底座预训练目标、学习率、全局批量、训练步数、加速器型号与卡数均未公开。公开的训练数据估算对应下表指明的型号。即时回答、推理档位和多智能体配置会改变单次推理过程。</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>版本 / 首发</th>
+<th>功能</th>
+<th>训练数据规模</th>
+<th>推理任务与评测</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>GPT‑5.1 · 2025.11.12</strong></td>
+<td>Instant 改进指令遵循，Thinking 更灵活地分配推理时间</td>
+<td>未披露</td>
+<td>日常对话及分析。简单题和难题分别观察延迟及推理档位。 <a href="https://openai.com/index/gpt-5-system-card-addendum-gpt-5-1/">GPT‑5.1 System Card Addendum</a></td>
+</tr>
+<tr class="even">
+<td><strong>GPT‑5.2 · 2025.12.11</strong></td>
+<td>分为 Instant、Thinking、Pro，强化长上下文和专业工具使用</td>
+<td>文本 &gt;10 万亿 token，见下表</td>
+<td>处理多文档、表格、代码和专业交付。GDPval、代码与长上下文分开读。 <a href="https://openai.com/index/introducing-gpt-5-2/">GPT‑5.2 Launch and Benchmarks</a></td>
+</tr>
+<tr class="odd">
+<td><strong>GPT‑5.3‑Codex · 2026.02.05</strong></td>
+<td>面向持续编码及工具使用</td>
+<td>未披露</td>
+<td>在终端里检查仓库、修改代码、执行并验证。 <a href="https://openai.com/index/introducing-gpt-5-3-codex/">GPT‑5.3-Codex Launch</a></td>
+</tr>
+<tr class="even">
+<td><strong>GPT‑5.3 Instant · 2026.03.03</strong></td>
+<td>调整对话风格和搜索结果组织</td>
+<td>未披露</td>
+<td>日常问答和结合搜索结果的多轮对话。 <a href="https://help.openai.com/en/articles/6825453-chatgpt-release-notes">ChatGPT Release Notes</a></td>
+</tr>
+<tr class="odd">
+<td><strong>GPT‑5.4 · 2026.03.05</strong></td>
+<td>强化编码、视觉与计算机操作。mini 和 nano 于 3 月 17 日推出</td>
+<td>Nano 文本 &gt;10 万亿 token。该区间来自 Nano 的训练内容摘要</td>
+<td>读屏操作、代码和专业任务。mini 适合低延迟工具任务，nano 适合分类、提取和排序。 <a href="https://openai.com/index/introducing-gpt-5-4/">GPT‑5.4 Launch</a> · <a href="https://openai.com/index/introducing-gpt-5-4-mini-and-nano/">GPT‑5.4 Mini and Nano Launch</a></td>
+</tr>
+<tr class="even">
+<td><strong>GPT‑5.5 · 2026.04.23</strong></td>
+<td>提升长流程任务的完成质量和输出效率</td>
+<td>文本 &gt;10 万亿 token，见下表</td>
+<td>跨工具执行编码、专业或研究任务。比较完成率时也记录时长和输出量。 <a href="https://openai.com/index/introducing-gpt-5-5/">GPT‑5.5 Launch and Benchmarks</a></td>
+</tr>
+<tr class="odd">
+<td><strong>GPT‑5.6 · 2026.07.09</strong></td>
+<td>Sol、Terra、Luna 对应不同质量和成本档。Ultra 可协调多个智能体</td>
+<td>Luna 文本 &gt;10 万亿 token。该区间来自 Luna 的训练内容摘要</td>
+<td>Sol 处理难题，Terra 平衡效率与质量，Luna 面向高频任务。DeepSWE v1.1 首发成绩依次为 72.7%、69.6%、67.2%。 <a href="https://openai.com/index/gpt-5-6/">GPT‑5.6 Launch and Benchmarks</a></td>
+</tr>
+</tbody>
+</table>
+<p>训练内容摘要给出按模态估算的语料区间。部分音视频以字幕、转写或元数据参与。训练采样总量和 API 支持的输入输出需另外核对。</p>
+<table>
+<thead>
+<tr class="header">
+<th>训练内容摘要</th>
+<th>文本</th>
+<th>图像</th>
+<th>音频</th>
+<th>视频</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://cdn.openai.com/pdf/gpt-5-2-eu-ai-act-public-summary-of-training-content.pdf">GPT‑5.2 Training Content Summary</a></td>
+<td>&gt;10 万亿 token</td>
+<td>&gt;10 亿张</td>
+<td>&gt;100 万小时</td>
+<td>1 万至 100 万小时</td>
+</tr>
+<tr class="even">
+<td><a href="https://cdn.openai.com/pdf/gpt-5-4-nano-eu-ai-act-public-summary-of-training-content.pdf">GPT‑5.4 Nano Training Content Summary</a></td>
+<td>&gt;10 万亿 token</td>
+<td>&gt;10 亿张</td>
+<td>&lt;1 万小时</td>
+<td>&lt;1 万小时</td>
+</tr>
+<tr class="odd">
+<td><a href="https://cdn.openai.com/pdf/gpt-5-5-eu-ai-act-public-summary-of-training-content.pdf">GPT‑5.5 Training Content Summary</a></td>
+<td>&gt;10 万亿 token</td>
+<td>&gt;10 亿张</td>
+<td>&gt;100 万小时</td>
+<td>&gt;100 万小时</td>
+</tr>
+<tr class="even">
+<td><a href="https://cdn.openai.com/pdf/gpt-5-6-luna-eu-ai-act-public-summary-of-training-content.pdf">GPT‑5.6 Luna Training Content Summary</a></td>
+<td>&gt;10 万亿 token</td>
+<td>&gt;10 亿张</td>
+<td>&gt;100 万小时</td>
+<td>&gt;100 万小时</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gpt-oss">gpt‑oss：可以对照权重和配置的公开分支</h3>
+<p><span class="model-meta">OpenAI · 2025.08</span></p>
+<div class="gpt-diagram" tabindex="0">
+<figure>
+<img src="assets/gpt-oss-architecture.svg" alt="gpt‑oss 的全局与滑窗注意力交替，前馈层由路由器选择专家。" /><figcaption aria-hidden="true">gpt‑oss 的全局与滑窗注意力交替，前馈层由路由器选择专家。</figcaption>
+</figure>
+</div>
+<ul>
+<li><strong>功能</strong>　提供可下载权重的文本推理模型，支持代码、数学、结构化输出和工具使用。120b 与 20b 总参数约 116.8B 与 20.9B，每 token 激活约 5.1B 与 3.6B。</li>
+<li><strong>预训练任务</strong>　自回归预测文本 token。后训练加入可调推理预算、工具使用和强化学习。</li>
+<li><strong>训练数据</strong>　两档均在数万亿量级文本 token 上预训练，包含 STEM、编程和通识。分型号实际采样总量未公布。</li>
+<li><strong>训练超参</strong>　模型卡披露架构、分词与推理设置，未给出完整的预训练学习率、批量及步数。</li>
+<li><strong>训练硬件</strong>　120b 约用 210 万 NVIDIA H100 GPU 小时，20b 约少一个数量级。模型卡未列并发训练卡数。</li>
+<li><strong>推理任务</strong>　在固定权重上选择推理档位，生成文本或调用外部工具。AIME、Codeforces 和 SWE-bench Verified 结果按推理与工具配置读取。</li>
+</ul>
+<p><a href="https://arxiv.org/html/2508.10925">gpt‑oss Model Card, Section 2</a></p>
+<h2 id="gpt6从作答到在软件里执行任务">GPT‑6：从作答到在软件里执行任务</h2>
+<table>
+<thead>
+<tr class="header">
+<th>型号</th>
+<th>技术重点</th>
+<th>推理时的典型输入 → 输出</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Astra</td>
+<td>视觉定位与长流程工具执行</td>
+<td>目标、截图、工具观察 → 一连串操作及结果</td>
+</tr>
+<tr class="even">
+<td>Sol / Luna</td>
+<td>将同代推理方法用于不同成本档</td>
+<td>图文、指令 → 推理文本或工具动作</td>
+</tr>
+<tr class="odd">
+<td>6.1 Sol</td>
+<td>改进持续编码及跨软件执行</td>
+<td>任务、项目状态、测试结果 → 修订后的交付物</td>
+</tr>
+<tr class="even">
+<td>6.1 Terra</td>
+<td>强化视觉推理及计算机操作</td>
+<td>截图、界面状态 → 定位与后续操作</td>
+</tr>
+<tr class="odd">
+<td>Rosalind Research</td>
+<td>复用 Astra 权重，配合生命科学工具及访问控制</td>
+<td>研究问题与专业材料 → 研究分析</td>
+</tr>
+</tbody>
+</table>
+<div class="gpt-diagram" tabindex="0">
+<figure>
+<img src="assets/agent-loop.svg" alt="GPT‑6 的软件操作推理流程示意。模型读取目标和观察，执行框架运行工具，新的观察回到下一轮。" /><figcaption aria-hidden="true">GPT‑6 的软件操作推理流程示意。模型读取目标和观察，执行框架运行工具，新的观察回到下一轮。</figcaption>
+</figure>
+</div>
+<h3 id="gpt6">GPT‑6 Astra</h3>
+<p><span class="model-meta">OpenAI · 2026.09.03</span></p>
+<ul>
+<li><strong>功能</strong>　理解截图、操作软件，并在跨步骤任务中检查和修正结果。API 文本及图像输入、文本输出，上下文约 1.05M token。</li>
+<li><strong>预训练任务</strong>　系统卡描述了预训练数据构成改进，也报告强化学习评分和跨步骤安全训练的改进。预训练损失与内部网络结构未披露。</li>
+<li><strong>训练数据</strong>　摘要估算文本 &gt;10 万亿 token、图像 &gt;10 亿张、音频和视频各 &gt;100 万小时。部分音视频用字幕、转写或元数据表示。</li>
+<li><strong>训练超参</strong>　公开资料未给出学习率、全局 batch size 与训练步数。</li>
+<li><strong>训练硬件</strong>　公开资料未给出训练加速器型号与卡数。</li>
+<li><strong>推理任务</strong>　先读目标与当前环境，选择工具或动作，再读取反馈决定继续、修正还是交付。执行框架提供工具、传递结果并管理权限。</li>
+</ul>
+<p><a href="https://deploymentsafety.openai.com/gpt-6-astra">Astra System Card, Model Data and Training</a> · <a href="https://cdn.openai.com/pdf/gpt-6-astra-eu-ai-act-public-summary-of-training-content.pdf">Astra Training Content Summary</a> · <a href="https://developers.openai.com/api/docs/models/gpt-6-astra">Astra Model Reference</a></p>
+<p><strong>评测。</strong> 下表沿用 Astra 首发的评测配置。ScreenSpot-Pro 无工具，OSWorld 2.0 采用离线子集及部分得分。Terminal-Bench 的 4.0 和 2.1 是不同基准版本。 <a href="https://openai.com/index/gpt-6-astra/">Astra Launch Benchmarks and Footnotes</a></p>
+<table>
+<thead>
+<tr class="header">
+<th>指标</th>
+<th style="text-align: right;">GPT‑5.6 Sol</th>
+<th style="text-align: right;">GPT‑6 Astra</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ScreenSpot-Pro，无工具</td>
+<td style="text-align: right;">76.9%</td>
+<td style="text-align: right;">92.7%</td>
+</tr>
+<tr class="even">
+<td>OSWorld 2.0，离线子集，部分得分</td>
+<td style="text-align: right;">65.7%</td>
+<td style="text-align: right;">72.6%</td>
+</tr>
+<tr class="odd">
+<td>Terminal-Bench 4.0</td>
+<td style="text-align: right;">37.3%</td>
+<td style="text-align: right;">57.9%</td>
+</tr>
+<tr class="even">
+<td>DeepSWE v1.1</td>
+<td style="text-align: right;">72.7%</td>
+<td style="text-align: right;">74.1%</td>
+</tr>
+</tbody>
+</table>
+<p>Astra Pro 随首发提供给部分 ChatGPT 方案。发布页列出了该选项，训练内容摘要记录的是 Astra 的配置。 <a href="https://openai.com/index/gpt-6-astra/">Astra Launch and Availability</a></p>
+<h3 id="gpt6-sol-luna">GPT‑6 Sol 与 Luna</h3>
+<p><span class="model-meta">OpenAI · 2026.09.22</span></p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>型号</th>
+<th>功能</th>
+<th>预训练任务与数据规模</th>
+<th>训练超参与硬件</th>
+<th>推理任务</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>GPT‑6 Sol</td>
+<td>面向专业工作、编码和计算机操作的通用推理档</td>
+<td>官方称训练方法与 Astra 类似，未披露独立预训练损失和数据量</td>
+<td>学习率、批量、加速器及卡数未公开</td>
+<td>接收文本和图像，处理代码、读图或多步工具任务。首发 DeepSWE v1.1 在最大推理档达 68.8%</td>
+</tr>
+<tr class="even">
+<td>GPT‑6 Luna</td>
+<td>更强调成本和速度的推理档</td>
+<td>官方称训练方法与 Astra 类似，未披露独立预训练损失和数据量</td>
+<td>学习率、批量、加速器及卡数未公开</td>
+<td>接收文本和图像，处理频繁的问答、阅读与工具任务</td>
+</tr>
+</tbody>
+</table>
+<p>10 月 7 日，OpenAI 的系统卡记录了 ChatGPT 中 Sol、Luna 的更新及安全评测变化。比较结果时，需区分 ChatGPT 的更新和更早的 API 版本。 <a href="https://openai.com/index/introducing-gpt-6-sol-and-luna/">GPT‑6 Sol and Luna Launch</a> · <a href="https://deploymentsafety.openai.com/gpt-6-october/avoiding-deceptive-interactions-with-users">GPT‑6 October System Card</a></p>
+<h3 id="gpt61-sol">GPT‑6.1 Sol</h3>
+<p><span class="model-meta">OpenAI · 2026.09.29</span></p>
+<ul>
+<li><strong>功能</strong>　进一步改进持续编码、软件操作和专业工作。</li>
+<li><strong>预训练任务</strong>　公开资料未给出可复现的预训练目标与损失配置。</li>
+<li><strong>训练数据</strong>　公开资料未给出训练语料规模。</li>
+<li><strong>训练超参</strong>　公开资料未给出学习率、全局 batch size 与训练步数。</li>
+<li><strong>训练硬件</strong>　公开资料未给出训练加速器型号与卡数。</li>
+<li><strong>推理任务</strong>　在编码或专业工作环境中多轮读取状态、使用工具、修订结果并验证。首发 OSWorld 2.0 离线子集的部分得分，在最大推理档比 GPT‑6 Sol 高 7 个百分点。</li>
+</ul>
+<p><a href="https://openai.com/index/introducing-gpt-6-1-sol/">GPT‑6.1 Sol Launch and Benchmarks</a> · <a href="https://deploymentsafety.openai.com/gpt-6-1-sol">GPT‑6.1 Sol System Card Addendum</a></p>
+<h3 id="gpt61-terra">GPT‑6.1 Terra</h3>
+<p><span class="model-meta">OpenAI · 2026.10.26</span></p>
+<ul>
+<li><strong>功能</strong>　强化视觉推理与计算机操作。</li>
+<li><strong>预训练任务</strong>　公开资料未给出可复现的预训练目标与损失配置。</li>
+<li><strong>训练数据</strong>　摘要估算文本 &gt;10 万亿 token、图像 &gt;10 亿张、音频和视频各 &gt;100 万小时。包含公开、合作、合成及人工内容，部分音视频以文本表示。</li>
+<li><strong>训练超参</strong>　公开资料未给出学习率、全局 batch size 与训练步数。</li>
+<li><strong>训练硬件</strong>　公开资料未给出训练加速器型号与卡数。</li>
+<li><strong>推理任务</strong>　从截图定位元素，根据操作反馈推进任务。首发 Terminal-Bench 4.0 在最大推理档解决 50.3% 的任务，发布页列出的 GPT‑5.6 Terra 对照为 21.5%。</li>
+</ul>
+<p><a href="https://openai.com/index/introducing-gpt-6-1-terra/">GPT‑6.1 Terra Launch</a> · <a href="https://cdn.openai.com/pdf/gpt-6-1-terra-eu-ai-act-public-summary-of-training-content.pdf">Terra Training Content Summary</a></p>
+<h3 id="gpt6-rosalind">GPT‑6 Rosalind Research</h3>
+<p><span class="model-meta">OpenAI · 2026.10.30</span></p>
+<ul>
+<li><strong>功能</strong>　在受限部署中用科学工具辅助多步生命科学研究。</li>
+<li><strong>预训练任务</strong>　系统卡确认与 <a href="#gpt6">GPT‑6 Astra</a> 使用相同权重，预训练目标沿用 Astra 的披露范围。</li>
+<li><strong>训练数据</strong>　沿用 Astra 的语料和估算区间。此次发布没有追加训练数据或后训练。</li>
+<li><strong>训练超参与硬件</strong>　沿用 Astra。官方未公开其学习率、批量、训练步数和加速器卡数。</li>
+<li><strong>推理任务</strong>　给定研究问题及材料，辅助分析、解释和规划。官方系统卡另列部署条件与生物安全评测。</li>
+</ul>
+<p><a href="https://deploymentsafety.openai.com/gpt-rosalind-6">GPT-Rosalind-6 System Card Addendum</a> · <a href="https://openai.com/products/release-notes/">OpenAI Release Notes</a></p>
+<h2 id="放到语言模型的发展史里读">放到语言模型的发展史里读</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>研究线索</th>
+<th>代表工作</th>
+<th>帮助解释的变化</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>双向表征</td>
+<td>Google AI Language 的 <strong>BERT</strong>（2018）</td>
+<td>掩码预测可以同时利用左右上下文，适合研究理解任务与迁移。 <a href="https://arxiv.org/abs/1810.04805">BERT Paper</a></td>
+</tr>
+<tr class="even">
+<td>文本到文本</td>
+<td>Google Research 的 <strong>T5</strong>（2019 预印本）</td>
+<td>把分类、翻译和摘要都转成生成文本，并系统比较目标、数据与迁移方法。它采用编码器—解码器。 <a href="https://arxiv.org/abs/1910.10683">T5 Paper</a></td>
+</tr>
+<tr class="odd">
+<td>计算量如何分配</td>
+<td>DeepMind 的 <strong>Chinchilla</strong>（2022）</td>
+<td>在其比较的固定训练算力下，更小模型配更多 token 可以更优。它把训练 token 量和参数量放进同一个实验设计。 <a href="https://arxiv.org/abs/2203.15556">Chinchilla Paper</a></td>
+</tr>
+<tr class="even">
+<td>可验证推理</td>
+<td>DeepSeek 的 <strong>R1‑Zero / R1</strong>（2025）</td>
+<td>R1‑Zero 试验直接强化学习，R1 加入冷启动数据和分阶段训练。开放报告有助于对照推理训练的实验变量。 <a href="https://arxiv.org/abs/2501.12948">DeepSeek-R1 Paper</a></td>
+</tr>
+</tbody>
+</table>
+<p>如果想接着看同一个 Transformer 骨干怎样进入图像、视频和三维几何，可以顺着视觉 token、交叉注意力与训练目标继续读。 <a href="../2026-09-12-transformer/index.html">从 Transformer 到视觉与多模态基础模型</a></p>
+      </article>
+    </div>
+  </main>
+
+  <div class="article-lightbox" id="articleLightbox" hidden role="dialog" aria-modal="true" aria-label="图片预览">
+    <button class="article-lightbox-backdrop" type="button" data-close aria-label="关闭预览"></button>
+    <div class="article-lightbox-panel">
+      <button class="article-lightbox-close" type="button" data-close aria-label="关闭">×</button>
+      <button class="article-lightbox-nav article-lightbox-prev" type="button" data-prev aria-label="上一张">‹</button>
+      <img id="articleLightboxImage" src="" alt="" />
+      <button class="article-lightbox-nav article-lightbox-next" type="button" data-next aria-label="下一张">›</button>
+      <p id="articleLightboxCount" class="article-lightbox-count"></p>
+    </div>
+  </div>
+
+  <footer class="footer"><p>© <span id="year"></span> Huiqing Zhang.</p></footer>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script src="../../article-gallery.js?v=20261102-2"></script>
+</body>
+</html>

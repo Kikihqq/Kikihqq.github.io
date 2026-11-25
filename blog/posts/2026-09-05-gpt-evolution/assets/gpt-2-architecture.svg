@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 227" role="img" aria-labelledby="title desc">
+<title id="title">GPT‑2 · 归一化移到子层输入侧</title><desc id="desc">下排展开一个解码块。两个子层都先归一化，再把结果加回各自的输入。</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#5b7185"/></marker></defs>
+<rect x="1" y="1" width="758" height="225" rx="12" fill="#f9fbfd" stroke="#d5e2eb"/>
+<g font-family="system-ui, PingFang SC, Microsoft YaHei, sans-serif" fill="#253d51">
+<text x="20" y="31" font-size="18" font-weight="700">GPT‑2 · 归一化移到子层输入侧</text>
+<path d="M178 72H185.5V72H193" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M362 72H368.5V72H375" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M544 72H553.5V72H563" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M362 153H368.5V153H375" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="14" y="51" width="164" height="42" rx="7" fill="#e7f1f6" stroke="#b6c8d4"/>
+<text x="96" y="69" text-anchor="middle" font-size="14" font-weight="650">字节级 BPE</text>
+<text x="96" y="85" text-anchor="middle" font-size="11" font-weight="400">token + 位置嵌入</text>
+<rect x="198" y="51" width="164" height="42" rx="7" fill="#e6f2eb" stroke="#b6c8d4"/>
+<text x="280" y="69" text-anchor="middle" font-size="14" font-weight="650">48 × 因果解码块</text>
+<text x="280" y="85" text-anchor="middle" font-size="11" font-weight="400">1.5B 档 · 宽度 1600</text>
+<rect x="380" y="51" width="164" height="42" rx="7" fill="#e6f2eb" stroke="#b6c8d4"/>
+<text x="462" y="77" text-anchor="middle" font-size="14" font-weight="650">末端 LayerNorm</text>
+<rect x="568" y="51" width="164" height="42" rx="7" fill="#faeedf" stroke="#b6c8d4"/>
+<text x="650" y="69" text-anchor="middle" font-size="14" font-weight="650">词表预测头</text>
+<text x="650" y="85" text-anchor="middle" font-size="11" font-weight="400">续写下一个 token</text>
+<rect x="198" y="132" width="164" height="42" rx="7" fill="#e6f2eb" stroke="#b6c8d4"/>
+<text x="280" y="150" text-anchor="middle" font-size="14" font-weight="650">LayerNorm → 因果注意力</text>
+<text x="280" y="166" text-anchor="middle" font-size="11" font-weight="400">输出加回残差流</text>
+<rect x="380" y="132" width="164" height="42" rx="7" fill="#e6f2eb" stroke="#b6c8d4"/>
+<text x="462" y="150" text-anchor="middle" font-size="14" font-weight="650">LayerNorm → 前馈网络</text>
+<text x="462" y="166" text-anchor="middle" font-size="11" font-weight="400">输出加回残差流</text>
+<text x="20" y="211" font-size="12" fill="#465c70">下排展开一个解码块。两个子层都先归一化，再把结果加回各自的输入。</text></g></svg>

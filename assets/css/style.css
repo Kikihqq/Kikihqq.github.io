@@ -386,6 +386,8 @@ mark {
 }
 
 .hero-bio {
+  width: 100%;
+  min-width: 0;
   margin-top: 20px;
   padding-top: 18px;
   border-top: 1px solid var(--line);
@@ -396,6 +398,11 @@ mark {
   font-size: 1rem;
   line-height: 1.8;
   letter-spacing: .002em;
+  text-align: justify;
+  text-align-last: left;
+  text-justify: inter-word;
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 .hero-bio p:last-child { margin-bottom: 0; }
 .hero-bio strong {
@@ -404,13 +411,14 @@ mark {
   font-weight: 750;
 }
 .hero-bio .accent-red { color: #a87572; }
-.hero-bio .accent-yellow { color: #a98d35; }
-.hero-bio .accent-blue { color: #a87572; }
+.hero-bio .accent-yellow { color: #dfad24; }
+.hero-bio .accent-blue { color: #55a8c4; font-weight: 700; }
 .hero-bio a { color: #a87572; font-weight: 600; border-bottom: 0; }
+.hero-bio a.advisor-link { color: inherit; font-weight: inherit; text-decoration: underline; text-underline-offset: 3px; }
 
 .hero-collab {
   margin: 16px 0 0;
-  color: #a87572;
+  color: #d62828;
   font-weight: 700;
   font-size: 0.98rem;
   line-height: 1.6;
@@ -903,6 +911,21 @@ mark {
   color: var(--ink-soft);
 }
 .awards li:last-child { border-bottom: 0; }
+.cv-page { --max-w: 1120px; }
+.cv-page .awards li {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  font-size: .86rem;
+}
+.cv-page .awards .award-year {
+  min-width: 0;
+  margin-right: 0;
+}
+@media (max-width: 600px) {
+  .cv-page .awards li { grid-template-columns: 72px minmax(0, 1fr); gap: 10px; }
+}
 .award-year {
   display: inline-block;
   min-width: 92px;

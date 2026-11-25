@@ -1,0 +1,39 @@
+.explainer, .concept-figure { margin: 32px 0; padding: 26px; border: 1px solid var(--article-border); background: #fff; border-radius: 16px; font-family: Inter, "Microsoft YaHei", sans-serif; letter-spacing: 0; }
+.explainer-label { color: #93636d; font-size: 11px; font-weight: 600; letter-spacing: .15em; }
+.article-content .explainer h3 { margin: 12px 0; font-family: inherit; font-size: 1.2rem; }
+.article-content .explainer p { font-size: 14px; line-height: 1.8; }
+.demo-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin: 22px 0; }
+.demo-controls label { font-size: 13px; font-weight: 600; }
+.demo-controls output { display: block; color: #8b5864; font-variant-numeric: tabular-nums; }
+.demo-controls input { display: block; width: 100%; margin: 12px 0; accent-color: #ad7480; cursor: pointer; }
+.explainer canvas, .explainer svg { width: 100%; height: auto; display: block; }
+.explainer canvas { aspect-ratio: 720 / 260; }
+.article-content .demo-result { margin: 16px 0; padding: 12px 16px; background: var(--article-soft); border-radius: 8px; color: #58464b; }
+.article-content .demo-note, .concept-figure figcaption { margin: 12px 0 0; color: #77716f; font-size: 12px; line-height: 1.8; }
+.planning-svg text { font-family: Inter, "Microsoft YaHei", sans-serif; font-size: 16px; fill: #595656; }
+.target-zone { fill: #faedbd; }
+.track { fill: none; stroke: #dedbdd; stroke-width: 2; }
+.model-path { fill: none; stroke: #ad7480; stroke-width: 3; }
+.real-path { fill: none; stroke: #6c929d; stroke-width: 3; stroke-dasharray: 6 4; }
+.model-ball { fill: #ad7480; }.real-ball { fill: #6c929d; }
+.article-content .concept-flow { display: grid; grid-template-columns: 1fr; gap: 0; list-style: none; margin: 18px 0; padding: 0; }
+.article-content .concept-flow li { position: relative; display: flex; align-items: baseline; flex-wrap: wrap; column-gap: 18px; margin: 0; padding: 13px 16px; border-left: 2px solid #d6bcc2; }
+.concept-flow li:nth-child(odd) { background: #f8f1f2; }
+.concept-flow b { font-size: 14px; color: #67545b; min-width: 135px; }
+.concept-flow span { font-size: 13px; color: #726d6b; }
+.explainer input:focus-visible { outline: 2px solid #93636d; outline-offset: 5px; }
+@media (max-width: 500px) {
+  .explainer, .concept-figure { padding: 16px; }
+  .demo-controls { grid-template-columns: 1fr; gap: 8px; }
+  .explainer canvas { aspect-ratio: 360 / 330; }
+  .planning-svg text { font-size: 22px; }
+  .concept-flow b { min-width: 0; }
+}
+@media print { .demo-controls { display: none; } .explainer, .concept-figure { break-inside: avoid; } }
+.article-header h1 { text-wrap: balance; }
+.architecture-figure { margin: 32px 0; }
+.diagram-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--article-border); border-radius: 12px; background: white; scrollbar-color: #d6bcc2 #f8f1f2; }
+.article-content .architecture-figure img { width: 100%; min-width: 640px; max-width: none; height: auto; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+.architecture-figure figcaption { margin-top: 12px; font-family: Inter, "Microsoft YaHei", sans-serif; color: #77716f; font-size: 13px; line-height: 1.8; }
+.diagram-scroll:focus-visible { outline: 2px solid #93636d; outline-offset: 4px; }
+@media (max-width: 700px) { .architecture-figure figcaption::after { content: " 小屏可横向滑动查看结构图。"; } }

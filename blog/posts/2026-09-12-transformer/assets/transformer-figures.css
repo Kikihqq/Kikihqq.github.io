@@ -1,0 +1,172 @@
+.tf-timeline {
+  overflow-x: auto;
+  padding: 4px 4px 12px;
+  scroll-snap-type: x proximity;
+}
+.article-content .tf-timeline ol {
+  display: flex;
+  gap: 12px;
+  width: max-content;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.article-content .tf-timeline li {
+  width: 12rem;
+  margin: 0;
+  padding: 12px;
+  border-top: 3px solid var(--article-accent);
+  background: var(--article-soft);
+  scroll-snap-align: start;
+}
+.tf-timeline time, .tf-timeline span {
+  display: block;
+  font-size: .85rem;
+  line-height: 1.45;
+}
+
+.tf-timeline .model-meta { margin: 4px 0; }
+.article-content .tf-architecture {
+  overflow-x: auto;
+  margin: 10px 0 16px;
+}
+.article-content .tf-architecture figure { margin: 0; text-align: center; }
+.article-content .tf-architecture img {
+  width: 100%;
+  min-width: min(550px, 145vw);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.tf-architecture figcaption { padding-top: 4px; color: #56636f; font-size: .79rem; }
+.article-content .tf-overview {
+  margin: 12px 0 26px;
+  padding: 13px;
+  border: 1px solid #d7e3ed;
+  border-radius: 10px;
+  background: #fafbfd;
+  font: .83rem/1.5 var(--sans);
+}
+.tf-overview figcaption {
+  margin: 0 0 10px;
+  color: #263c4e;
+  font-weight: 700;
+  text-align: center;
+}
+.tf-route {
+  display: grid;
+  grid-template-columns: 9em minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 8px 0;
+  border-top: 1px solid #e1e8ef;
+}
+.article-content .tf-route strong { color: #465d70; font-size: .8rem; }
+.article-content .tf-route ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.article-content .tf-route li {
+  flex: 1 1 7em;
+  margin: 0;
+  padding: 5px 8px;
+  border-left: 2px solid #8eb3a2;
+  background: #edf5f1;
+}
+.tf-route a { color: #244c56; font-weight: 700; }
+.tf-route span { display: block; font-size: .78rem; }
+
+.article-content .tf-demo {
+  box-sizing: border-box;
+  width: min(100%, 29rem);
+  margin: 16px auto 24px;
+  padding: 12px;
+  border: 1px solid #c8d8e6;
+  border-radius: 10px;
+  background: #f8fafc;
+  font: .8rem/1.5 var(--sans);
+}
+.tf-demo figcaption { margin-bottom: 7px; text-align: center; }
+.tf-demo output { display: block; margin-top: 8px; text-align: center; }
+.tf-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.tf-buttons button {
+  padding: 3px 6px;
+  border: 1px solid #8b9dad;
+  border-radius: 5px;
+  background: white;
+  color: #273e53;
+  font: inherit;
+  cursor: pointer;
+}
+.tf-buttons button[aria-pressed="true"] { background: #dcece7; border-color: #538676; }
+.tf-buttons [data-play] { color: #60415c; border-style: dashed; }
+.tf-demo[data-playing] [data-play] { color: #fff; background: #60415c; border-style: solid; }
+.tf-play-state { display: block; margin-top: 5px; text-align: center; color: #5e6974; font-size: .75rem; }
+.tf-prompt-scene { display: block; width: min(100%, 320px); margin: 8px auto 0; }
+.tf-prompt-scene .tf-outline {
+  display: none;
+  fill: none;
+  stroke: #ffec86;
+  stroke-width: 5px;
+  stroke-dasharray: 6 3;
+  stroke-linejoin: round;
+}
+.tf-prompt-scene[data-mode="point"] .tf-left,
+.tf-prompt-scene[data-mode="concept"] .tf-outline { display: block; }
+.tf-prompt-scene:not([data-mode="point"]) .tf-point { display: none; }
+
+.tf-patch-grid, .tf-mask-grid {
+  display: grid;
+  gap: 2px;
+  margin: 8px auto 0;
+  width: min(100%, 180px);
+}
+.tf-patch-grid { grid-template-columns: repeat(8, 1fr); }
+.tf-mask-grid { grid-template-columns: repeat(14, 1fr); }
+.tf-patch-grid button, .tf-mask-grid span {
+  display: block;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid #bccbd8;
+  border-radius: 3px;
+  background: #e0e6ec;
+}
+.tf-patch-grid button { cursor: pointer; }
+.tf-patch-grid button[data-visible], .tf-mask-grid span[data-visible] { background: #9fcfc0; }
+.tf-patch-grid button[aria-pressed="true"] {
+  border: 2px solid #25243f;
+  background: #a89ac7;
+}
+.tf-demo :focus-visible, .tf-timeline:focus-visible, .tf-architecture:focus-visible { outline: 2px solid #295687; outline-offset: 2px; }
+
+.tf-views {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: min(100%, 370px);
+  margin: 12px auto 0;
+}
+.tf-view {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #c8d8e6;
+  border-radius: 8px;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+.tf-view span, .tf-view b { padding: 4px; border-radius: 4px; background: #e0e6ec; }
+.tf-views[data-mode="local"] .tf-view:first-child span,
+.tf-views[data-mode="global"] .tf-view span { background: #9fcfc0; }
+.tf-views[data-mode="register"] .tf-view b { background: #cfc3eb; }
+
+@media (max-width: 520px) {
+  .tf-route { grid-template-columns: 1fr; gap: 4px; }
+}

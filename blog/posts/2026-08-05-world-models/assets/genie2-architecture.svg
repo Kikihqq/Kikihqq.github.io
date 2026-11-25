@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="410" viewBox="0 0 800 410" role="img" aria-labelledby="title desc">
+<title id="title">Genie 2：动作条件自回归潜空间扩散</title><desc id="desc">编码首帧后，模型依据历史潜帧和当前动作，用扩散生成下一潜帧，解码到画面并继续滚动。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#95707a"/></marker></defs>
+<style>text{font-family:Arial,'Microsoft YaHei',sans-serif;fill:#51474b;font-size:16px}.small{font-size:14px;fill:#756b70}.label{font-size:13px;letter-spacing:2px;fill:#946875}.box{fill:#f8f1f2;stroke:#dbc7cd;stroke-width:1.5}.blue{fill:#eef4f6;stroke:#c7d8dd;stroke-width:1.5}.flow{fill:none;stroke:#95707a;stroke-width:1.8;marker-end:url(#arrow)}</style>
+<rect width="800" height="410" fill="#fff"/><text x="30" y="34" class="label">GENIE 2 · 2024 · 推理时的一次环境更新</text>
+<rect class="box" x="30" y="65" width="200" height="60" rx="10"/><text x="130" y="91" text-anchor="middle">起始图像 → 编码器</text><text x="130" y="113" text-anchor="middle" class="small">初始化历史潜帧</text>
+<path class="flow" d="M130 125V188"/>
+<rect class="box" x="290" y="65" width="220" height="60" rx="10"/><text x="400" y="101" text-anchor="middle">用户动作 / 键盘控制</text><path class="flow" d="M400 125V188"/>
+<rect class="box" x="30" y="190" width="200" height="80" rx="10"/><text x="130" y="221" text-anchor="middle">历史潜帧</text><text x="130" y="246" text-anchor="middle" class="small">已生成状态作为上下文</text>
+<rect class="blue" x="290" y="190" width="220" height="80" rx="10"/><text x="400" y="221" text-anchor="middle">因果 Transformer</text><text x="400" y="246" text-anchor="middle" class="small">扩散生成下一潜帧</text>
+<rect class="box" x="570" y="190" width="200" height="80" rx="10"/><text x="670" y="221" text-anchor="middle">解码器</text><text x="670" y="246" text-anchor="middle" class="small">显示下一帧</text>
+<path class="flow" d="M230 230H288"/><path class="flow" d="M510 230H568"/>
+<path class="flow" d="M535 230V321H130V272"/><text x="330" y="345" text-anchor="middle" class="small">把新潜帧追加到历史，再接收下一动作</text>
+<text x="30" y="388" class="small">沿视频时间：自回归　·　生成每一潜帧：内部扩散采样　·　此图不代表 Genie 3 的未公开结构</text>
+</svg>

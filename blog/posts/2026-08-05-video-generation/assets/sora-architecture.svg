@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="540" viewBox="0 0 800 540" role="img" aria-labelledby="title desc">
+<title id="title">Sora 初代训练与文生视频推理</title><desc id="desc">训练将真实视频压缩分块并加噪，学习带条件去噪。生成从噪声潜变量开始，文本条件 Transformer 和采样器反复更新潜变量，最后解码。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#95707a"/></marker></defs>
+<style>text{font-family:Arial,'Microsoft YaHei',sans-serif;fill:#51474b;font-size:16px}.small{font-size:14px;fill:#756b70}.label{font-size:13px;letter-spacing:2px;fill:#946875}.box{fill:#f8f1f2;stroke:#dbc7cd;stroke-width:1.5}.blue{fill:#eef4f6;stroke:#c7d8dd;stroke-width:1.5}.flow{fill:none;stroke:#95707a;stroke-width:1.8;marker-end:url(#arrow)}.dash{stroke-dasharray:5 4}</style>
+<rect width="800" height="540" fill="#fff"/>
+<text x="30" y="34" class="label">SORA · 2024 报告 · 训练与推理不是一条流水线</text>
+<text x="30" y="74">A · 扩散训练所需的样本表示</text>
+<rect class="box" x="30" y="94" width="145" height="64" rx="10"/><text x="102" y="132" text-anchor="middle">真实视频 / 图像</text>
+<rect class="box" x="215" y="94" width="160" height="64" rx="10"/><text x="295" y="121" text-anchor="middle">时空压缩编码器</text><text x="295" y="144" text-anchor="middle" class="small">连续潜变量</text>
+<rect class="box" x="415" y="94" width="155" height="64" rx="10"/><text x="492" y="121" text-anchor="middle">切分时空 patches</text><text x="492" y="144" text-anchor="middle" class="small">加入噪声</text>
+<rect class="blue" x="610" y="94" width="160" height="64" rx="10"/><text x="690" y="121" text-anchor="middle">学习条件去噪</text><text x="690" y="144" text-anchor="middle" class="small">Transformer 骨干</text>
+<path class="flow" d="M175 126H213"/><path class="flow" d="M375 126H413"/><path class="flow" d="M570 126H608"/>
+<text x="30" y="190" class="small">视频描述提供文本条件；网络训练目标与具体实现以公开报告为边界。</text>
+<path d="M30 214H770" stroke="#eadde0"/>
+<text x="30" y="250">B · 文生视频推理</text>
+<rect class="box" x="270" y="273" width="280" height="54" rx="10"/><text x="410" y="306" text-anchor="middle">文本条件 + 噪声时间步</text>
+<path class="flow dash" d="M410 327V357"/>
+<rect class="box" x="30" y="359" width="190" height="76" rx="10"/><text x="125" y="389" text-anchor="middle">随机噪声潜变量</text><text x="125" y="414" text-anchor="middle" class="small">按目标尺寸组织 patches</text>
+<rect class="blue" x="270" y="359" width="280" height="76" rx="10"/><text x="410" y="389" text-anchor="middle">Transformer + 采样器</text><text x="410" y="414" text-anchor="middle" class="small">预测去噪方向并更新潜变量</text>
+<rect class="box" x="600" y="359" width="170" height="76" rx="10"/><text x="685" y="389" text-anchor="middle">潜变量解码器</text><text x="685" y="414" text-anchor="middle" class="small">输出像素视频</text>
+<path class="flow" d="M220 397H268"/><path class="flow" d="M550 397H598"/>
+<path class="flow" d="M500 435V470H320V437"/><text x="410" y="494" text-anchor="middle" class="small">多次去噪更新，不是逐步增加一帧</text>
+<text x="30" y="526" class="small">注意：潜空间 patches 不等于离散码本 token；也不是先生成独立图片再拼成视频。</text>
+</svg>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 227" role="img" aria-labelledby="title desc">
+<title id="title">gpt‑oss · 注意力交替，前馈走专家</title><desc id="desc">下排展开一个块中的主要计算。略去归一化和各子层残差支路。</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#5b7185"/></marker></defs>
+<rect x="1" y="1" width="758" height="225" rx="12" fill="#f9fbfd" stroke="#d5e2eb"/>
+<g font-family="system-ui, PingFang SC, Microsoft YaHei, sans-serif" fill="#253d51">
+<text x="20" y="31" font-size="18" font-weight="700">gpt‑oss · 注意力交替，前馈走专家</text>
+<path d="M178 72H185.5V72H193" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M362 72H368.5V72H375" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M178 153H185.5V153H193" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M362 153H368.5V153H375" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M544 153H553.5V153H563" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="14" y="51" width="164" height="42" rx="7" fill="#e7f1f6" stroke="#b6c8d4"/>
+<text x="96" y="77" text-anchor="middle" font-size="14" font-weight="650">文本 token 嵌入</text>
+<rect x="198" y="51" width="164" height="42" rx="7" fill="#e6f2eb" stroke="#b6c8d4"/>
+<text x="280" y="69" text-anchor="middle" font-size="14" font-weight="650">Transformer 层堆叠</text>
+<text x="280" y="85" text-anchor="middle" font-size="11" font-weight="400">120b：36 层 · 20b：24 层</text>
+<rect x="380" y="51" width="164" height="42" rx="7" fill="#faeedf" stroke="#b6c8d4"/>
+<text x="462" y="69" text-anchor="middle" font-size="14" font-weight="650">语言模型输出头</text>
+<text x="462" y="85" text-anchor="middle" font-size="11" font-weight="400">下一 token 分布</text>
+<rect x="14" y="132" width="164" height="42" rx="7" fill="#e6f2eb" stroke="#b6c8d4"/>
+<text x="96" y="150" text-anchor="middle" font-size="14" font-weight="650">因果注意力</text>
+<text x="96" y="166" text-anchor="middle" font-size="11" font-weight="400">全局 / 滑窗按层交替</text>
+<rect x="198" y="132" width="164" height="42" rx="7" fill="#e6f2eb" stroke="#b6c8d4"/>
+<text x="280" y="150" text-anchor="middle" font-size="14" font-weight="650">MoE 路由器</text>
+<text x="280" y="166" text-anchor="middle" font-size="11" font-weight="400">每个 token 选 4 个专家</text>
+<rect x="380" y="132" width="164" height="42" rx="7" fill="#e6f2eb" stroke="#b6c8d4"/>
+<text x="462" y="150" text-anchor="middle" font-size="14" font-weight="650">并行专家 FFN</text>
+<text x="462" y="166" text-anchor="middle" font-size="11" font-weight="400">120b：128 个 · 20b：32 个</text>
+<rect x="568" y="132" width="164" height="42" rx="7" fill="#faeedf" stroke="#b6c8d4"/>
+<text x="650" y="150" text-anchor="middle" font-size="14" font-weight="650">加权合并</text>
+<text x="650" y="166" text-anchor="middle" font-size="11" font-weight="400">返回残差流</text>
+<text x="20" y="211" font-size="12" fill="#465c70">下排展开一个块中的主要计算。略去归一化和各子层残差支路。</text></g></svg>

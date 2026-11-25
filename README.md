@@ -34,7 +34,7 @@ huiqing-zhang-website/
 │           ├── rsba.jpg
 │           └── fec.jpg
 ├── blog/
-│   ├── posts/                  ← Markdown 博客源文件（每篇一个 .md）
+│   ├── posts/                  ← 每篇文章一个文件夹（正文、设置、配图和生成页面）
 │   ├── article-template.html   ← 所有文章共用的 HTML 模板
 │   ├── editor.html             ← 浏览器内 Markdown 写作与侧栏预览
 │   ├── mindmap.html            ← 独立可视化思维导图编辑器
@@ -138,7 +138,8 @@ Single breakpoint at 760px — the hero stacks, the timeline collapses, publicat
 - 头像：替换 `assets/images/avatar.jpg`
 - News：在 `<section id="news">` 加 `<li>`
 - 论文：复制一个 `<article class="pub">` 块改字即可，论文配图放进 `assets/images/pubs/`
-- 博客：将图片放入 `assets/images/blog/`，将 Markdown 放入 `blog/posts/`，然后运行 `./blog/build-blog.sh`
+- 博客：将图片放入 `blog/posts/文章名/assets/`，将 Markdown 保存为同目录的 `index.md`，然后运行 `./blog/build-blog.sh`
+- 博客排版：[博客排版与写作规范](blog/WORKFLOW.md#博客排版与写作规范)
 - 配色：`assets/css/style.css` 顶部的 `:root` 变量
 - 部署：仓库命名为 `Kikihqq.github.io` → push → Settings 里开 Pages → 访问 `https://kikihqq.github.io/`
 
@@ -156,7 +157,7 @@ Single breakpoint at 760px — the hero stacks, the timeline collapses, publicat
 - 右侧同步显示文章标题、日期、分类、简介和 Markdown 正文的最终外观。
 - 浏览器本地自动存稿、导入 `.md`、复制完整 Markdown 和导出 `.md`。
 
-这是静态 GitHub Pages 网站，浏览器无法直接把文章写回仓库。写完后点击 **Export .md**，把下载的文件放入 `blog/posts/`，然后运行：
+这是静态 GitHub Pages 网站，浏览器无法直接把文章写回仓库。写完后点击 **Export .md**，把下载的文件保存为 `blog/posts/文章名/index.md`，然后运行：
 
 ```bash
 ./blog/build-blog.sh
@@ -179,7 +180,7 @@ Single breakpoint at 760px — the hero stacks, the timeline collapses, publicat
 为文章建立单独的图片目录，例如：
 
 ```text
-assets/images/blog/my-new-post/
+blog/posts/2026-07-19-my-new-post/assets/
 ├── 01-cover.png
 ├── 02-method.png
 └── 03-result.png
@@ -187,21 +188,21 @@ assets/images/blog/my-new-post/
 
 没有图片也可以；删除 Markdown 元信息中的 `gallery` 字段即可。
 
-PDF、PPT 或 PPTX 建议放在：
+PDF、PPT 或 PPTX 也放在该文章目录内的：
 
 ```text
-assets/blog/files/
+assets/
 ```
 
 ### 2. 新建 Markdown
 
-在 `blog/posts/` 中新建文件。文件名会成为最终网址，建议使用：
+在 `blog/posts/` 中新建文章目录。目录名决定网址，正文和 YAML 设置统一保存在 `index.md` 中，建议使用：
 
 ```text
-YYYY-MM-DD-英文短标题.md
+YYYY-MM-DD-英文短标题/index.md
 ```
 
-例如 `blog/posts/2026-07-19-my-new-post.md`：
+例如 `blog/posts/2026-07-19-my-new-post/index.md`：
 
 ```markdown
 ---
@@ -215,9 +216,9 @@ format: markdown
 tags: [3D Vision, Paper Reading]
 color: pink
 gallery:
-  - ../assets/images/blog/my-new-post/01-cover.png
-  - ../assets/images/blog/my-new-post/02-method.png
-  - ../assets/images/blog/my-new-post/03-result.png
+  - assets/01-cover.png
+  - assets/02-method.png
+  - assets/03-result.png
 ---
 
 ## 摘要
@@ -255,8 +256,8 @@ description: 对一篇三维重建论文的完整阅读报告。
 category: PAPER READING
 format: pdf
 tags: [3D Reconstruction, Paper Reading]
-document: ../assets/blog/files/paper-reading.pdf
-preview: ../assets/blog/files/paper-reading.pdf
+document: assets/paper-reading.pdf
+preview: assets/paper-reading.pdf
 ---
 
 ## About this document
@@ -279,8 +280,8 @@ description: 关于多视图几何与三维重建的课程汇报。
 category: PRESENTATION
 format: slides
 tags: [Presentation, Multi-view Geometry]
-document: ../assets/blog/files/3d-vision-talk.pptx
-preview: ../assets/blog/files/3d-vision-talk.pdf
+document: assets/3d-vision-talk.pptx
+preview: assets/3d-vision-talk.pdf
 ---
 
 ## Presentation overview
@@ -300,7 +301,7 @@ Blog 页面会提供 PDF 预览和 PPTX 原文件下载入口。
 
 脚本会自动完成：
 
-1. 将 `blog/posts/*.md` 生成统一主题的 HTML 文章。
+1. 将 `blog/posts/*/index.md` 生成同目录的 `index.html`，并为旧的 `blog/文章名.html` 网址生成兼容跳转页。
 2. 按发布日期更新 `blog/index.html`，每篇文章占一整行。
 3. 将最新三篇文章同步到主页 Blog 模块；超过三篇时主页只显示最新三篇。
 4. 为每篇文章生成统一目录、字体、标题、简介和图片画廊。

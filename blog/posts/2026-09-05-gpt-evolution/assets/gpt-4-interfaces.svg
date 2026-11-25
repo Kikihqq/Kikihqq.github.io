@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 219" role="img" aria-labelledby="title desc">
+<title id="title">GPT‑4 家族 · 公开的模态边界</title><desc id="desc">依据 GPT‑4 技术报告和 GPT‑4o 发布资料。内部的模态编码和融合方式未披露。</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#5b7185"/></marker></defs>
+<rect x="1" y="1" width="758" height="217" rx="12" fill="#f9fbfd" stroke="#d5e2eb"/>
+<g font-family="system-ui, PingFang SC, Microsoft YaHei, sans-serif" fill="#253d51">
+<text x="20" y="31" font-size="18" font-weight="700">GPT‑4 家族 · 公开的模态边界</text>
+<path d="M178 72H185.5V72H193" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M362 72H368.5V72H375" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M178 145H185.5V145H193" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M362 145H368.5V145H375" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="14" y="51" width="164" height="42" rx="7" fill="#e7f1f6" stroke="#b6c8d4"/>
+<text x="96" y="77" text-anchor="middle" font-size="14" font-weight="650">文本 + 图像</text>
+<rect x="198" y="51" width="164" height="42" rx="7" fill="#e6f2eb" stroke="#b6c8d4"/>
+<text x="280" y="69" text-anchor="middle" font-size="14" font-weight="650">GPT‑4</text>
+<text x="280" y="85" text-anchor="middle" font-size="11" font-weight="400">Transformer 风格骨干</text>
+<rect x="380" y="51" width="164" height="42" rx="7" fill="#faeedf" stroke="#b6c8d4"/>
+<text x="462" y="77" text-anchor="middle" font-size="14" font-weight="650">文本输出</text>
+<rect x="14" y="124" width="164" height="42" rx="7" fill="#e7f1f6" stroke="#b6c8d4"/>
+<text x="96" y="150" text-anchor="middle" font-size="14" font-weight="650">文本 + 图像 + 音频</text>
+<rect x="198" y="124" width="164" height="42" rx="7" fill="#e6f2eb" stroke="#b6c8d4"/>
+<text x="280" y="142" text-anchor="middle" font-size="14" font-weight="650">GPT‑4o</text>
+<text x="280" y="158" text-anchor="middle" font-size="11" font-weight="400">端到端跨模态单模型</text>
+<rect x="380" y="124" width="164" height="42" rx="7" fill="#faeedf" stroke="#b6c8d4"/>
+<text x="462" y="142" text-anchor="middle" font-size="14" font-weight="650">文本、图像或音频</text>
+<text x="462" y="158" text-anchor="middle" font-size="11" font-weight="400">按所用端点开放</text>
+<text x="20" y="203" font-size="12" fill="#465c70">依据 GPT‑4 技术报告和 GPT‑4o 发布资料。内部的模态编码和融合方式未披露。</text>
+<path d="M544 72H563" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M544 145H563" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="568" y="51" width="164" height="42" rx="7" fill="#f1eaf5" stroke="#b6c8d4"/>
+<text x="650" y="77" text-anchor="middle" font-size="14">读图题、考试、代码</text>
+<rect x="568" y="124" width="164" height="42" rx="7" fill="#f1eaf5" stroke="#b6c8d4"/>
+<text x="650" y="150" text-anchor="middle" font-size="14">图文理解与实时语音</text>
+</g></svg>

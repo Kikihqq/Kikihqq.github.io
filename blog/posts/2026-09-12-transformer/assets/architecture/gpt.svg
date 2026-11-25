@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 204" role="img" aria-labelledby="title">
+<title id="title">GPT / GPT-3 · 因果解码器</title>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#60758a"/></marker></defs>
+<rect x="1" y="1" width="738" height="202" rx="12" fill="#fafbfd" stroke="#d7e3ed"/>
+<g font-family="system-ui, PingFang SC, Microsoft YaHei, sans-serif" fill="#263c4e">
+<text x="18" y="27" font-size="16" font-weight="700">GPT / GPT-3 · 因果解码器</text>
+<path d="M167 69H180.5V69H194" fill="none" stroke="#60758a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M353 69H366.5V69H380" fill="none" stroke="#60758a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M539 69H552.5V69H566" fill="none" stroke="#60758a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M648 88V115" fill="none" stroke="#60758a" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<rect x="13" y="50" width="154" height="38" rx="7" fill="#edf3f8" stroke="#a5b9cd"/>
+<text x="90" y="74" text-anchor="middle" font-size="13" font-weight="650">文本前缀</text>
+<rect x="199" y="50" width="154" height="38" rx="7" fill="#e1eee8" stroke="#8eb3a2"/>
+<text x="276" y="74" text-anchor="middle" font-size="13" font-weight="650">词嵌入 + 位置嵌入</text>
+<rect x="385" y="50" width="154" height="38" rx="7" fill="#e1eee8" stroke="#8eb3a2"/>
+<text x="462" y="67" text-anchor="middle" font-size="13" font-weight="650">因果解码块 × N</text>
+<text x="462" y="81" text-anchor="middle" font-size="11" font-weight="400">掩码自注意力 + FFN</text>
+<rect x="571" y="50" width="154" height="38" rx="7" fill="#f9eedb" stroke="#c4a673"/>
+<text x="648" y="74" text-anchor="middle" font-size="13" font-weight="650">词表预测头</text>
+<rect x="571" y="120" width="154" height="38" rx="7" fill="#f9e9eb" stroke="#c39ca4"/>
+<text x="648" y="144" text-anchor="middle" font-size="13" font-weight="650">训练：右移目标 token</text>
+<text x="18" y="189" font-size="12" fill="#485c66">GPT-3 交替使用全局和局部带状稀疏注意力，两类层都遵守因果约束。</text>
+</g></svg>

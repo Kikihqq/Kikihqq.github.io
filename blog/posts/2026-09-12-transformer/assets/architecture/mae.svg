@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 249" role="img" aria-labelledby="title">
+<title id="title">MAE · 大编码器只读可见位置</title>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#60758a"/></marker></defs>
+<rect x="1" y="1" width="738" height="247" rx="12" fill="#fafbfd" stroke="#d7e3ed"/>
+<g font-family="system-ui, PingFang SC, Microsoft YaHei, sans-serif" fill="#263c4e">
+<text x="18" y="27" font-size="16" font-weight="700">MAE · 大编码器只读可见位置</text>
+<path d="M167 69H180.5V69H194" fill="none" stroke="#60758a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M353 69H366.5V69H380" fill="none" stroke="#60758a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M539 69H552.5V69H566" fill="none" stroke="#60758a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M539 139H552.5V69H566" fill="none" stroke="#60758a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M648 88V115" fill="none" stroke="#60758a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M571 139H557.5V209H544" fill="none" stroke="#60758a" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<path d="M353 209H366.5V209H380" fill="none" stroke="#60758a" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<rect x="13" y="50" width="154" height="38" rx="7" fill="#edf3f8" stroke="#a5b9cd"/>
+<text x="90" y="74" text-anchor="middle" font-size="13" font-weight="650">图像 patch</text>
+<rect x="199" y="50" width="154" height="38" rx="7" fill="#e1eee8" stroke="#8eb3a2"/>
+<text x="276" y="67" text-anchor="middle" font-size="13" font-weight="650">可见 patch</text>
+<text x="276" y="81" text-anchor="middle" font-size="11" font-weight="400">约 25%</text>
+<rect x="385" y="50" width="154" height="38" rx="7" fill="#e1eee8" stroke="#8eb3a2"/>
+<text x="462" y="74" text-anchor="middle" font-size="13" font-weight="650">ViT 编码器</text>
+<rect x="571" y="50" width="154" height="38" rx="7" fill="#e1eee8" stroke="#8eb3a2"/>
+<text x="648" y="74" text-anchor="middle" font-size="13" font-weight="650">轻量解码器</text>
+<rect x="385" y="120" width="154" height="38" rx="7" fill="#f4ecf7" stroke="#ba9fc5"/>
+<text x="462" y="144" text-anchor="middle" font-size="13" font-weight="650">占位 mask token</text>
+<rect x="571" y="120" width="154" height="38" rx="7" fill="#f9eedb" stroke="#c4a673"/>
+<text x="648" y="144" text-anchor="middle" font-size="13" font-weight="650">重建被遮像素</text>
+<rect x="385" y="190" width="154" height="38" rx="7" fill="#f9e9eb" stroke="#c39ca4"/>
+<text x="462" y="214" text-anchor="middle" font-size="13" font-weight="650">训练：遮盖位置 MSE</text>
+<rect x="199" y="190" width="154" height="38" rx="7" fill="#edf3f8" stroke="#a5b9cd"/>
+<text x="276" y="214" text-anchor="middle" font-size="13" font-weight="650">原图被遮位置</text>
+</g></svg>

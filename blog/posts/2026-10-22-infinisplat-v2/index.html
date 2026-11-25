@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="InfiniSplat v2 的双分支架构、几何对齐、大角度监督与学习式细化学习笔记。" />
+  <title>InfiniSplatV2：分析并改进面向任意视图的前馈式三维高斯泼溅 — Huiqing Zhang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../../assets/css/style.css?v=20261102-2" />
+  <link rel="stylesheet" href="../../article.css?v=20261125-3" />
+  <link rel="icon" type="image/svg+xml" href="../../../assets/images/favicon.svg" />
+</head>
+<body data-topic="3DV">
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../../../index.html#top" class="nav-brand">Huiqing&nbsp;Zhang</a>
+      <ul class="nav-links">
+        <li><a href="../../../index.html#about">About</a></li>
+        <li><a href="../../../index.html#publications">Publications</a></li>
+        <li><a href="../../../cv.html">CV</a></li>
+        <li><a href="../../index.html" class="active">Blog</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="article-shell">
+    <div class="article-topbar">
+      <a href="../../index.html" class="back-link">← 返回全部文章</a>
+
+    </div>
+    <header class="article-header">
+      <p class="article-kicker">PAPER NOTES</p>
+      <h1>InfiniSplatV2：分析并改进面向任意视图的前馈式三维高斯泼溅</h1>
+      <time class="article-date" datetime="2026-10-22">2026-10-22</time>
+      <p class="article-deck">InfiniSplat v2 的双分支架构、几何对齐、大角度监督与学习式细化学习笔记。</p>
+          </header>
+
+
+
+    <div class="article-layout">
+      <aside class="article-sidebar" aria-label="文章目录">
+        <p class="article-sidebar-label">CONTENTS</p>
+                <ul>
+                <li><a href="#摘要">1. 摘要</a></li>
+                <li><a href="#核心insight">2. 核心insight</a>
+                <ul>
+                <li><a href="#v2真正研究的问题">V2真正研究的问题</a></li>
+                </ul></li>
+                <li><a href="#dgs基础">3. 3DGS基础</a>
+                <ul>
+                <li><a href="#公式推导尺度与旋转如何产生三维形状">3.1 公式推导：尺度与旋转如何产生三维形状？</a></li>
+                <li><a href="#公式推导三维高斯如何变成屏幕上的斑点">3.2 公式推导：三维高斯如何变成屏幕上的斑点？</a></li>
+                <li><a href="#公式推导不透明度如何控制一个点出现还是消失">3.3 公式推导：不透明度如何控制一个点“出现”还是“消失”？</a></li>
+                </ul></li>
+                <li><a href="#方法">4. 方法</a>
+                <ul>
+                <li><a href="#前馈重建部分stage-i">4.1 前馈重建部分（Stage I）</a></li>
+                <li><a href="#学习式细化部分stage-ii">4.2 学习式细化部分（Stage II）</a></li>
+                <li><a href="#补充">补充：</a></li>
+                </ul></li>
+                <li><a href="#双分支为什么能够阻止几何退化式2">5. 双分支为什么能够阻止几何退化？——式（2）</a>
+                <ul>
+                <li><a href="#先理解梯度泄漏到几何分支的问题">5.1 先理解梯度“泄漏”到几何分支的问题</a></li>
+                <li><a href="#为什么不是只冻结整个-da3然后训练一个小高斯头">5.2 为什么不是只冻结整个 DA3，然后训练一个小高斯头？</a></li>
+                <li><a href="#区分三种冻结">5.3 区分三种“冻结”</a></li>
+                </ul></li>
+                <li><a href="#最重要的几何推导为什么要做尺度归一化和-umeyama-对齐式349">6. 最重要的几何推导：为什么要做尺度归一化和 Umeyama 对齐？——式（3）（4）（9）</a>
+                <ul>
+                <li><a href="#相机反投影的初等推导">6.1 相机反投影的初等推导</a></li>
+                <li><a href="#为什么预测深度没有天然的米制尺度">6.2 为什么预测深度没有天然的米制尺度？</a></li>
+                <li><a href="#式3平均径向距离归一化在做什么">6.3 式（3）：平均径向距离归一化在做什么？</a></li>
+                <li><a href="#umeyama-方法的本质是什么">6.4 Umeyama 方法的本质是什么？</a></li>
+                <li><a href="#为什么训练时用真实值位姿很重要">6.5 为什么训练时用真实值位姿很重要？</a></li>
+                <li><a href="#对尺度可观测性的一个隐藏限制">6.6 对尺度可观测性的一个隐藏限制</a></li>
+                </ul></li>
+                <li><a href="#大角度监督为什么是关键式5式8">7. 大角度监督为什么是关键？——式（5）、式（8）</a>
+                <ul>
+                <li><a href="#从二维图像恢复三维椭球的欠约束性">7.1 从二维图像恢复三维椭球的欠约束性</a></li>
+                <li><a href="#式5为什么是与最近输入相机的角度">7.2 式（5）为什么是“与最近输入相机的角度”？</a></li>
+                <li><a href="#论文的large-angle究竟有多大">7.3 论文的“Large-angle”究竟有多大？</a></li>
+                <li><a href="#式8为什么需要-gt-深度掩码">7.4 式（8）为什么需要 GT 深度掩码？</a></li>
+                </ul></li>
+                <li><a href="#体素合并不透明度剪枝与离群点可靠性">8. 体素合并、不透明度剪枝与离群点可靠性</a>
+                <ul>
+                <li><a href="#为什么同一表面会产生很多重复高斯">8.1 为什么同一表面会产生很多重复高斯？</a></li>
+                <li><a href="#为什么-alpha0.01-能选择性去除飞点">8.2 为什么 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>&lt;</mo><mn>0.01</mn></mrow><annotation encoding="application/x-tex">\alpha&lt;0.01</annotation></semantics></math> 能选择性去除飞点？</a></li>
+                <li><a href="#一项可复算的量相对富集程度">8.3 一项可复算的量：相对富集程度</a></li>
+                </ul></li>
+                <li><a href="#第一阶段到底怎样训练式1012">9. 第一阶段到底怎样训练？——式（10）—（12）</a>
+                <ul>
+                <li><a href="#l1-重建误差">9.1 L1 重建误差</a></li>
+                <li><a href="#lpips-感知误差">9.2 LPIPS 感知误差</a></li>
+                </ul></li>
+                <li><a href="#第二阶段为什么还要学一个-knn-transformer-细化器">10. 第二阶段：为什么还要学一个 KNN Transformer 细化器？</a>
+                <ul>
+                <li><a href="#直接-adam-为什么未必高效">10.1 直接 Adam 为什么未必高效？</a></li>
+                <li><a href="#knn-transformer-的信息是怎样组合的">10.2 KNN Transformer 的信息是怎样组合的？</a></li>
+                <li><a href="#为什么更新尺度要用指数更新不透明度要用-logit">10.3 为什么更新尺度要用指数，更新不透明度要用 Logit？</a></li>
+                <li><a href="#为什么增加限制-atanhmathrmraw">10.4 为什么增加限制 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi><mo>tanh</mo><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="normal"><mi>r</mi><mi>a</mi><mi>w</mi></mstyle><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">a\tanh(\mathrm{raw})</annotation></semantics></math>？</a></li>
+                </ul></li>
+                <li><a href="#一阶代理损失如何实现能训练却不求二阶导式1718">11. 一阶代理损失如何实现“能训练，却不求二阶导”？——式（17）（18）</a>
+                <ul>
+                <li><a href="#停止梯度stop-gradient是什么">11.1 停止梯度（Stop-gradient）是什么？</a></li>
+                <li><a href="#代理损失的严谨推导">11.2 代理损失的严谨推导</a></li>
+                </ul></li>
+                <li><a href="#实验">12. 实验</a>
+                <ul>
+                <li><a href="#训练和评估有两个不相同的-n-范围">12.1 训练和评估有两个不相同的 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math> 范围</a></li>
+                <li><a href="#训练数据计算资源时间">12.2 训练数据、计算资源、时间</a></li>
+                <li><a href="#感知质量像素质量与几何质量区别">12.3 感知质量、像素质量与几何质量区别</a></li>
+                </ul></li>
+                </ul>
+              </aside>
+      <article class="article-content">
+<figure>
+<img src="assets/figure-01.png" alt="image-20261125135312416" /><figcaption aria-hidden="true">image-20261125135312416</figcaption>
+</figure>
+<h2 id="摘要">1. 摘要</h2>
+<p>前馈式高斯重建直接从输入图像构建用于新视角渲染的三维场景，但是，要从<strong>预测的几何结构中学习高斯属性</strong>，以便在<strong>视角发生大幅变化</strong>时实现高质量渲染，仍然具有挑战性。我们分析了高斯属性学习中的局限性，并提出 InfiniSplat v2：一种通过架构和训练方式的改变来提升渲染质量的方法。我们的方法利用一个冻结的几何分支，将几何预测与属性预测解耦；在训练时使用真实值相机位姿对齐预测的高斯；并采用大角度目标视图监督。在六个数据集上，同一个训练完成的模型所产生的前馈输出，在提供位姿和不提供位姿两种设定中，均在所评估方法中取得最先进的平均学习感知图像块相似度（LPIPS）和深度图像结构与纹理相似度（DISTS）。在提供位姿的设定下，与所评估的最强基线相比，平均 LPIPS 和 DISTS 分别下降了 25.8% 和 32.9%。进一步发现仅通过图像重建监督学习得到的不透明度（Opacity）就能够抑制几何不一致的点。</p>
+<h2 id="核心insight">2. 核心insight</h2>
+<h3 id="v2真正研究的问题">V2真正研究的问题</h3>
+<p><strong>给你一个大致正确、但里面混有飞点和表面误差的多视图预测点云。假设不允许随便移动这些点，你是否还能通过学习每个点应该多大、朝什么方向、是什么颜色、该有多透明，把它变成高质量、能从新角度看的高斯场景？</strong></p>
+<p>V2 是一种<strong>基于强几何先验的渲染质量改进</strong>，而不是“完全解决了三维几何错误”。</p>
+<blockquote>
+<p>当几何基础模型已经提供了具有一定准确度的空间锚点时，前馈高斯重建中的主要瓶颈可能从“再预测更准确的点位置”，转移到“如何通过多视图可见性、形状约束与属性学习，控制这些不完美点对渲染的贡献”。如果只以图像重建误差训练，让几何中心自由移动反而可能破坏几何先验；固定中心并学习不透明度、尺度、旋转与颜色，能够更稳定地提升大角度新视角渲染。</p>
+</blockquote>
+<p>这不是说“几何位置不重要”，恰好相反：它依赖一个足够强的 DA3 几何先验。作者做的是<strong>合理分配不同变量的优化职责（Optimization Responsibility / Degrees of Freedom）</strong>：</p>
+<ul>
+<li>几何基础模型负责提供空间结构；</li>
+<li>属性网络负责表达可见性、局部形状和外观；</li>
+<li>真实值位姿对齐负责避免训练相机的误差污染属性学习；</li>
+<li>大角度目标监督负责增加形状与遮挡的一致性约束；</li>
+<li>学习式细化负责在固定位置的条件下进一步修正渲染属性。</li>
+</ul>
+<h2 id="dgs基础">3. 3DGS基础</h2>
+<p>点云里的普通点只有三维坐标 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mi>z</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(x,y,z)</annotation></semantics></math>，没有真实的体积与渲染面积。三维高斯（3D Gaussian）则可以想象为放置在三维空间中的<strong>有方向、有长短、有透明度的椭球状软斑点</strong>。</p>
+<p>一个高斯通常至少包含：</p>
+<ol type="1">
+<li>中心（Center）<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="bold"><mi>𝛍</mi></mstyle><mo>∈</mo><msup><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mn>3</mn></msup></mrow><annotation encoding="application/x-tex">\boldsymbol\mu\in\mathbb R^3</annotation></semantics></math>：椭球放在哪里。</li>
+<li>尺度（Scale）<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="bold"><mi>𝐬</mi></mstyle><mo>=</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>s</mi><mi>x</mi></msub><mo>,</mo><msub><mi>s</mi><mi>y</mi></msub><mo>,</mo><msub><mi>s</mi><mi>z</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathbf s=(s_x,s_y,s_z)</annotation></semantics></math>：沿三个局部主轴有多大。</li>
+<li>旋转（Rotation）<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mo>∈</mo><mi>S</mi><mi>O</mi><mo stretchy="false" form="prefix">(</mo><mn>3</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">R\in SO(3)</annotation></semantics></math> 或四元数 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝐪</mi></mstyle><annotation encoding="application/x-tex">\mathbf q</annotation></semantics></math>：主轴朝向如何。</li>
+<li>不透明度（Opacity）<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>∈</mo><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\alpha\in[0,1]</annotation></semantics></math>：这个软斑点对穿过它的光线有多强遮挡。</li>
+<li>颜色（Color）<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><annotation encoding="application/x-tex">\mathbf c</annotation></semantics></math>：它向相机贡献什么颜色。V2 用零阶球谐函数（Zeroth-order SH），在基础表示上不显式随观察方向改变颜色。</li>
+</ol>
+<p>论文的式（1）把中心单独记作 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝛍</mi></mstyle><annotation encoding="application/x-tex">\boldsymbol\mu</annotation></semantics></math>，其余四类属性合记为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝛏</mi></mstyle><annotation encoding="application/x-tex">\boldsymbol\xi</annotation></semantics></math>。<strong>这种符号拆分恰好对应 V2 的核心工程边界：中心不动，属性可以变。</strong></p>
+<h3 id="公式推导尺度与旋转如何产生三维形状">3.1 公式推导：尺度与旋转如何产生三维形状？</h3>
+<p>三维高斯密度的常见未归一化形式为</p>
+<p><span class="numbered-equation" id="equation-1"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>G</mi><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mo>exp</mo><mrow><mo stretchy="true" form="prefix">[</mo><mo>−</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo>−</mo><mstyle mathvariant="bold"><mi>𝛍</mi></mstyle><msup><mo stretchy="false" form="postfix">)</mo><mi>⊤</mi></msup><msup><mi>Σ</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo>−</mo><mstyle mathvariant="bold"><mi>𝛍</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">
+G(\mathbf x)=\exp\left[-\frac12(\mathbf x-\boldsymbol\mu)^\top
+\Sigma^{-1}(\mathbf x-\boldsymbol\mu)\right].
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 1">(1)</span></span></p>
+<p>这里的 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Σ</mi><annotation encoding="application/x-tex">\Sigma</annotation></semantics></math> 是 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>3</mn><mo>×</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">3\times3</annotation></semantics></math> 的对称正定协方差矩阵（Covariance Matrix）。如果直接学习 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Σ</mi><annotation encoding="application/x-tex">\Sigma</annotation></semantics></math> 的九个元素，很难保证训练中它始终是有效的协方差。3DGS 常采用分解：</p>
+<p><span class="numbered-equation" id="equation-2"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo>=</mo><mo>diag</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>s</mi><mi>x</mi></msub><mo>,</mo><msub><mi>s</mi><mi>y</mi></msub><mo>,</mo><msub><mi>s</mi><mi>z</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mspace width="2.0em"></mspace><menclose notation="box"><mrow><mi>Σ</mi><mo>=</mo><mi>R</mi><msup><mi>S</mi><mn>2</mn></msup><msup><mi>R</mi><mi>⊤</mi></msup><mo>=</mo><mi>R</mi><mi>S</mi><msup><mi>S</mi><mi>⊤</mi></msup><msup><mi>R</mi><mi>⊤</mi></msup></mrow></menclose><mi>.</mi></mrow><annotation encoding="application/x-tex">
+S=\operatorname{diag}(s_x,s_y,s_z),\qquad
+\boxed{\Sigma=RS^2R^\top=RSS^\top R^\top}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 2">(2)</span></span></p>
+<p>理解这两个矩阵：</p>
+<ul>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>S</mi><mn>2</mn></msup><mo>=</mo><mo>diag</mo><mo stretchy="false" form="prefix">(</mo><msubsup><mi>s</mi><mi>x</mi><mn>2</mn></msubsup><mo>,</mo><msubsup><mi>s</mi><mi>y</mi><mn>2</mn></msubsup><mo>,</mo><msubsup><mi>s</mi><mi>z</mi><mn>2</mn></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S^2=\operatorname{diag}(s_x^2,s_y^2,s_z^2)</annotation></semantics></math> 说明椭球沿三个主轴的方差。</li>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>R</mi><annotation encoding="application/x-tex">R</annotation></semantics></math> 把这个椭球从自身的局部坐标系旋转到世界坐标系。</li>
+<li>假如 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mi>x</mi></msub><mo>=</mo><mn>0.2</mn><mo>,</mo><msub><mi>s</mi><mi>y</mi></msub><mo>=</mo><mn>0.02</mn><mo>,</mo><msub><mi>s</mi><mi>z</mi></msub><mo>=</mo><mn>0.02</mn></mrow><annotation encoding="application/x-tex">s_x=0.2,s_y=0.02,s_z=0.02</annotation></semantics></math>，这个高斯是长条；假如 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mi>x</mi></msub><mo>=</mo><msub><mi>s</mi><mi>y</mi></msub><mo>=</mo><mn>0.2</mn><mo>,</mo><msub><mi>s</mi><mi>z</mi></msub><mo>=</mo><mn>0.005</mn></mrow><annotation encoding="application/x-tex">s_x=s_y=0.2,s_z=0.005</annotation></semantics></math>，更像薄片，适合拟合表面。</li>
+<li>如果把所有 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math> 放大十倍，<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Σ</mi><annotation encoding="application/x-tex">\Sigma</annotation></semantics></math> 变大一百倍，高斯在画面上会覆盖更广区域，更容易产生模糊。</li>
+</ul>
+<p>注意：<strong>固定 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝛍</mi></mstyle><annotation encoding="application/x-tex">\boldsymbol\mu</annotation></semantics></math> 不等于固定椭球表面</strong>。即使点中心不动，只要尺度和旋转可以改变，可见表面的位置、厚度与外观仍会发生变化。因此固定中心仅限制几何自由度，不能保证所有最终渲染深度完全准确。</p>
+<h3 id="公式推导三维高斯如何变成屏幕上的斑点">3.2 公式推导：三维高斯如何变成屏幕上的斑点？</h3>
+<p>世界坐标下的点先被相机外参变换到相机坐标，再由透视投影映射到像素：</p>
+<p><span class="numbered-equation" id="equation-3"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mi>c</mi></msub><mo>=</mo><msub><mi>R</mi><mrow><mi>c</mi><mi>w</mi></mrow></msub><mo stretchy="false" form="prefix">(</mo><msub><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mi>w</mi></msub><mo>−</mo><msub><mstyle mathvariant="bold"><mi>𝐭</mi></mstyle><mrow><mi>w</mi><mi>c</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mspace width="2.0em"></mspace><mi>u</mi><mo>=</mo><msub><mi>f</mi><mi>x</mi></msub><mfrac><msub><mi>X</mi><mi>c</mi></msub><msub><mi>Z</mi><mi>c</mi></msub></mfrac><mo>+</mo><msub><mi>c</mi><mi>x</mi></msub><mo>,</mo><mspace width="1.0em"></mspace><mi>v</mi><mo>=</mo><msub><mi>f</mi><mi>y</mi></msub><mfrac><msub><mi>Y</mi><mi>c</mi></msub><msub><mi>Z</mi><mi>c</mi></msub></mfrac><mo>+</mo><msub><mi>c</mi><mi>y</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\mathbf x_c=R_{cw}(\mathbf x_w-\mathbf t_{wc}),\qquad
+u=f_x\frac{X_c}{Z_c}+c_x,\quad
+v=f_y\frac{Y_c}{Z_c}+c_y.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 3">(3)</span></span></p>
+<p>其中 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mrow><mi>c</mi><mi>w</mi></mrow></msub><annotation encoding="application/x-tex">R_{cw}</annotation></semantics></math> 是世界到相机旋转，<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="bold"><mi>𝐭</mi></mstyle><mrow><mi>w</mi><mi>c</mi></mrow></msub><annotation encoding="application/x-tex">\mathbf t_{wc}</annotation></semantics></math> 是相机中心的世界坐标。为估计这个椭球投影到屏幕的形状，在高斯中心附近对透视投影做一阶线性化，得到投影雅可比矩阵（Jacobian）：</p>
+<p><span class="numbered-equation" id="equation-4"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>J</mi><mo>=</mo><mrow><mo stretchy="true" form="prefix">[</mo><mtable><mtr><mtd columnalign="center"><mfrac><msub><mi>f</mi><mi>x</mi></msub><msub><mi>Z</mi><mi>c</mi></msub></mfrac></mtd><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><mo>−</mo><mfrac><mrow><msub><mi>f</mi><mi>x</mi></msub><msub><mi>X</mi><mi>c</mi></msub></mrow><msubsup><mi>Z</mi><mi>c</mi><mn>2</mn></msubsup></mfrac></mtd></mtr><mtr><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><mfrac><msub><mi>f</mi><mi>y</mi></msub><msub><mi>Z</mi><mi>c</mi></msub></mfrac></mtd><mtd columnalign="center"><mo>−</mo><mfrac><mrow><msub><mi>f</mi><mi>y</mi></msub><msub><mi>Y</mi><mi>c</mi></msub></mrow><msubsup><mi>Z</mi><mi>c</mi><mn>2</mn></msubsup></mfrac></mtd></mtr></mtable><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">
+J=\begin{bmatrix}
+\frac{f_x}{Z_c}&amp;0&amp;-\frac{f_xX_c}{Z_c^2}\\
+0&amp;\frac{f_y}{Z_c}&amp;-\frac{f_yY_c}{Z_c^2}
+\end{bmatrix}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 4">(4)</span></span></p>
+<p>于是二维屏幕协方差近似为</p>
+<p><span class="numbered-equation" id="equation-5"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><menclose notation="box"><mrow><msub><mi>Σ</mi><mrow><mn>2</mn><mi>D</mi></mrow></msub><mo>≈</mo><mi>J</mi><msub><mi>R</mi><mrow><mi>c</mi><mi>w</mi></mrow></msub><mspace width="0.167em"></mspace><msub><mi>Σ</mi><mrow><mn>3</mn><mi>D</mi></mrow></msub><mspace width="0.167em"></mspace><msubsup><mi>R</mi><mrow><mi>c</mi><mi>w</mi></mrow><mi>⊤</mi></msubsup><msup><mi>J</mi><mi>⊤</mi></msup></mrow></menclose><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\boxed{\Sigma_{2D}\approx J R_{cw}\,\Sigma_{3D}\,R_{cw}^{\top}J^{\top}}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 5">(5)</span></span></p>
+<p>推导背后的核心是随机变量线性变换公式：若 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="bold"><mi>𝐲</mi></mstyle><mo>=</mo><mi>A</mi><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle></mrow><annotation encoding="application/x-tex">\mathbf y=A\mathbf x</annotation></semantics></math>，则 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>Cov</mo><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐲</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>A</mi><mo>Cov</mo><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo stretchy="false" form="postfix">)</mo><msup><mi>A</mi><mi>⊤</mi></msup></mrow><annotation encoding="application/x-tex">\operatorname{Cov}(\mathbf y)=A\operatorname{Cov}(\mathbf x)A^\top</annotation></semantics></math>。透视投影并非线性函数，但在足够小的高斯附近可用雅可比近似。真实渲染器还会加入抗混叠或最小屏幕方差等处理；论文使用 <code>gsplat</code> 与 <code>eps2d=10^{-2}</code>。</p>
+<p>这直接解释 V2 为什么强调大角度目标视图：改变相机朝向和高斯相对观察方向，相当于改变 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>J</mi><msub><mi>R</mi><mrow><mi>c</mi><mi>w</mi></mrow></msub></mrow><annotation encoding="application/x-tex">J R_{cw}</annotation></semantics></math>，同一个三维高斯从不同方向投影出的椭圆会不一样，从而为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Σ</mi><mrow><mn>3</mn><mi>D</mi></mrow></msub><annotation encoding="application/x-tex">\Sigma_{3D}</annotation></semantics></math> 提供更多约束。</p>
+<h3 id="公式推导不透明度如何控制一个点出现还是消失">3.3 公式推导：不透明度如何控制一个点“出现”还是“消失”？</h3>
+<p>对于一条像素射线，假设与屏幕高斯的贡献按深度从前到后排列。设第 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> 个高斯在这个像素位置的有效不透明度为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>a</mi><mi>k</mi></msub><annotation encoding="application/x-tex">a_k</annotation></semantics></math>。前 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">k-1</annotation></semantics></math> 个高斯留下的透射率为</p>
+<p><span class="numbered-equation" id="equation-6"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>T</mi><mi>k</mi></msub><mo>=</mo><munder><mo>∏</mo><mrow><mi>j</mi><mo>&lt;</mo><mi>k</mi></mrow></munder><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>a</mi><mi>j</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mspace width="2.0em"></mspace><msub><mi>w</mi><mi>k</mi></msub><mo>=</mo><msub><mi>T</mi><mi>k</mi></msub><msub><mi>a</mi><mi>k</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+T_k=\prod_{j&lt;k}(1-a_j),\qquad
+w_k=T_ka_k.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 6">(6)</span></span></p>
+<p>最终颜色近似为</p>
+<p><span class="numbered-equation" id="equation-7"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><menclose notation="box"><mrow><mover><mi>C</mi><mo accent="true">̂</mo></mover><mo>=</mo><munder><mo>∑</mo><mi>k</mi></munder><msub><mi>w</mi><mi>k</mi></msub><msub><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mi>k</mi></msub><mo>+</mo><msub><mi>T</mi><mstyle mathvariant="normal"><mi>e</mi><mi>n</mi><mi>d</mi></mstyle></msub><msub><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mstyle mathvariant="normal"><mi>b</mi><mi>g</mi></mstyle></msub></mrow></menclose><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\boxed{\hat C=\sum_k w_k\mathbf c_k+T_{\mathrm{end}}\mathbf c_{\mathrm{bg}}}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 7">(7)</span></span></p>
+<p>举例：假设同一条射线上有两个高斯，前景的有效 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>a</mi><mn>1</mn></msub><mo>=</mo><mn>0.8</mn></mrow><annotation encoding="application/x-tex">a_1=0.8</annotation></semantics></math>，后景的有效 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>a</mi><mn>2</mn></msub><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">a_2=0.5</annotation></semantics></math>。那么 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mn>1</mn></msub><mo>=</mo><mn>0.8</mn></mrow><annotation encoding="application/x-tex">w_1=0.8</annotation></semantics></math>，<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mn>2</mn></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mn>0.8</mn><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mn>0.5</mn><mo>=</mo><mn>0.1</mn></mrow><annotation encoding="application/x-tex">w_2=(1-0.8)\times0.5=0.1</annotation></semantics></math>。如果前景是错误飞点，它可能严重遮挡正确表面；如果网络把它的 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>a</mi><mn>1</mn></msub><annotation encoding="application/x-tex">a_1</annotation></semantics></math> 学到 0.01，那么它几乎不再干扰后景。这就是<strong>通过改变不透明度而非移动点来“处理飞点”</strong>的物理—渲染直觉。</p>
+<p>需要注意：这个结论只针对该点在指定像素上的渲染贡献。低不透明度并不意味着预测的三维点位置被修正，更不等于三维表面的真实几何被恢复。</p>
+<h2 id="方法">4. 方法</h2>
+<h3 id="前馈重建部分stage-i">4.1 前馈重建部分（Stage I）</h3>
+<p>按真实的执行关系，步骤是：</p>
+<ol type="1">
+<li>输入 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math> 张 RGB 图像，有时还提供相机内参与外参。</li>
+<li>冻结 DA3 分支 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Φ</mi><mstyle mathvariant="normal"><mi>g</mi><mi>e</mi><mi>o</mi></mstyle></msub><annotation encoding="application/x-tex">\Phi_{\mathrm{geo}}</annotation></semantics></math> 输出各张图的深度 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>D</mi><mo accent="true">̂</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\hat D_i</annotation></semantics></math> 和相机 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>Π</mi><mo accent="true">̂</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\hat\Pi_i</annotation></semantics></math>。</li>
+<li>相同预训练初始化、参数独立的属性分支 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Φ</mi><mstyle mathvariant="normal"><mi>a</mi><mi>t</mi><mi>t</mi><mi>r</mi></mstyle></msub><annotation encoding="application/x-tex">\Phi_{\mathrm{attr}}</annotation></semantics></math> 输出多层视觉特征，再由 DPT 解码器产生每个像素的 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>,</mo><mstyle mathvariant="bold"><mi>𝐬</mi></mstyle><mo>,</mo><mstyle mathvariant="bold"><mi>𝐪</mi></mstyle><mo>,</mo><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle></mrow><annotation encoding="application/x-tex">\alpha,\mathbf s,\mathbf q,\mathbf c</annotation></semantics></math>。</li>
+<li>在训练时，根据输入相机对应关系估计尺度 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>s</mi><mi>C</mi></msub><annotation encoding="application/x-tex">s_C</annotation></semantics></math>，用尺度对齐的真实值相机反投影<strong>预测深度</strong>，得到高斯中心；在测试时则按是否提供位姿选择对应的相机构建方案。</li>
+<li>对三维空间中冗余的点按体素合并；对不透明度小于 0.01 的高斯进行剪枝。</li>
+<li>使用输入视图与采样目标视图的渲染损失训练属性分支，只更新允许训练的参数。</li>
+</ol>
+<p>“前馈输出（Ours）”到这里就结束。它不是在测试时对当前场景进行几千次梯度下降。</p>
+<h3 id="学习式细化部分stage-ii">4.2 学习式细化部分（Stage II）</h3>
+<p>从上面的初始场景 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mstyle mathvariant="script"><mi>𝒢</mi></mstyle><mn>0</mn></msup><annotation encoding="application/x-tex">\mathcal G^0</annotation></semantics></math> 出发：</p>
+<ol type="1">
+<li>渲染到输入相机，计算重建损失关于当前高斯属性的梯度。</li>
+<li>把这些梯度当作<strong>特征向量</strong>，和图像特征、当前属性、KNN 邻居特征、隐藏状态一起输入细化网络。</li>
+<li>细化网络输出各个高斯属性的有限幅度增量。</li>
+<li>高斯中心保持不变，重新渲染，再用新梯度更新下一步；测试时总共执行三步。</li>
+</ol>
+<p>这和传统 Adam 的本质区别在于：Adam 使用预先定义的动量和方差自适应规则处理梯度；学习式细化器利用训练得到的网络参数与局部三维上下文，尝试从“哪里错了”预测“怎样修改属性更有效”。但两者都不改变点中心。</p>
+<hr />
+<h3 id="补充">补充：</h3>
+<h4 id="da3-gs-的共享特征与多任务解码">DA3-GS 的共享特征与多任务解码</h4>
+<figure>
+<img src="assets/figure-02.png" alt="image-20261125142514828" /><figcaption aria-hidden="true">image-20261125142514828</figcaption>
+</figure>
+<p>在这个过程中，Transformer 某一层的输出可以写成：</p>
+<p><span class="numbered-equation" id="equation-8"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>F</mi><mi>l</mi></msup><mo>=</mo><msup><mo>Transformer</mo><mi>l</mi></msup><mo stretchy="false" form="prefix">(</mo><msub><mi>I</mi><mn>1</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>I</mi><mi>N</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+F^l=\operatorname{Transformer}^l(I_1,\ldots,I_N)
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 8">(8)</span></span></p>
+<p>更具体地说，给第 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math> 张图的第 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math> 个图像块输出特征：</p>
+<p><span class="numbered-equation" id="equation-9"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>f</mi><mrow><mi>i</mi><mo>,</mo><mi>j</mi></mrow><mrow><mo stretchy="false" form="prefix">(</mo><mi>l</mi><mo stretchy="false" form="postfix">)</mo></mrow></msubsup><mo>∈</mo><msup><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mi>d</mi></msup></mrow><annotation encoding="application/x-tex">
+f_{i,j}^{(l)}\in\mathbb R^d
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 9">(9)</span></span></p>
+<p>因为经历了跨视图信息交换，这个特征可能依赖其他图像：</p>
+<p><span class="numbered-equation" id="equation-10"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>f</mi><mrow><mi>i</mi><mo>,</mo><mi>j</mi></mrow><mrow><mo stretchy="false" form="prefix">(</mo><mi>l</mi><mo stretchy="false" form="postfix">)</mo></mrow></msubsup><mo>=</mo><mi>f</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>I</mi><mn>1</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>I</mi><mi>N</mi></msub><mo>;</mo><mi>i</mi><mo>,</mo><mi>j</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+f_{i,j}^{(l)}
+=
+f(I_1,\ldots,I_N;i,j)
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 10">(10)</span></span></p>
+<p><strong>所谓共享的多视图特征（Shared Multi-view Features），就是深度、相机和高斯预测都能够利用这套已经进行跨视图信息交互的视觉表示。</strong></p>
+<p>DA3 论文及公开实现均支持这种结构描述。</p>
+<h5 id="这种特征与普通-dino-特征有什么区别">这种特征与普通 DINO 特征有什么区别？</h5>
+<p>普通单图 DINO 特征擅长捕获：</p>
+<ul>
+<li>语义信息（Semantic Information）：这个区域属于桌子、地面还是墙面。</li>
+<li>纹理信息（Texture Information）：局部是什么视觉模式。</li>
+<li>一定程度的空间结构（Spatial Structure）。</li>
+</ul>
+<p>多视图 DA3 特征还通过跨图交互学习：</p>
+<ul>
+<li>不同图像中哪些区域可能对应同一个三维结构。</li>
+<li>同一表面在不同视角下如何变化。</li>
+<li>相机运动与场景深度之间的联系。</li>
+</ul>
+<p>但是需要注意：这不意味着 DA3 一定显式构造了像经典 SfM 一样的匹配轨迹（Feature Tracks），也不意味着每个注意力权重都等价于可靠的像素对应关系。</p>
+<p>它是在神经网络特征空间里学习几何关联。</p>
+<h4 id="dptdense-prediction-transformer">DPT（Dense Prediction Transformer）</h4>
+<p><strong>把 Transformer 输出的低分辨率、具有丰富上下文信息的图像块特征，变成每个像素都有预测值的高分辨率输出。</strong></p>
+<p>假设输入图片为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>448</mn><mo>×</mo><mn>448</mn></mrow><annotation encoding="application/x-tex">448\times448</annotation></semantics></math>。如果图像块大小为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>14</mn><mo>×</mo><mn>14</mn></mrow><annotation encoding="application/x-tex">14\times14</annotation></semantics></math>，Transformer 可能得到一个 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>32</mn><mo>×</mo><mn>32</mn></mrow><annotation encoding="application/x-tex">32\times32</annotation></semantics></math> 的特征网格。但我们需要的是：</p>
+<p><span class="numbered-equation" id="equation-11"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi><mo>∈</mo><msup><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mrow><mn>448</mn><mo>×</mo><mn>448</mn></mrow></msup></mrow><annotation encoding="application/x-tex">
+D\in\mathbb R^{448\times448}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 11">(11)</span></span></p>
+<p>即每个像素都有深度。如果预测高斯属性，输出还需要包含：</p>
+<p><span class="numbered-equation" id="equation-12"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>A</mi><mo>∈</mo><msup><mstyle mathvariant="double-struck"><mi>ℝ</mi></mstyle><mrow><mn>448</mn><mo>×</mo><mn>448</mn><mo>×</mo><msub><mi>C</mi><mstyle mathvariant="normal"><mi>G</mi><mi>S</mi></mstyle></msub></mrow></msup></mrow><annotation encoding="application/x-tex">
+A\in\mathbb R^{448\times448\times C_{\mathrm{GS}}}
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 12">(12)</span></span></p>
+<p>其中 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>C</mi><mstyle mathvariant="normal"><mi>G</mi><mi>S</mi></mstyle></msub><annotation encoding="application/x-tex">C_{\mathrm{GS}}</annotation></semantics></math> 是高斯属性的通道数量，取决于颜色表示及参数化方式。</p>
+<p>Transformer 的输出分辨率较低，无法直接得到这个高分辨率结果。DPT 就承担了这一转换工作。</p>
+<p>DPT 的核心是特征重组、多尺度融合和上采样，而不是某一种特定的深度损失函数。DPT 原始工作通过将不同 Transformer 层的令牌重组成多尺度特征图，再用卷积特征融合模块逐步恢复空间分辨率，最终执行深度估计或语义分割等稠密预测任务。</p>
+<p><img src="assets/figure-03.png" alt="image-20261125142841309" style="zoom:50%;" /></p>
+<hr />
+<h2 id="双分支为什么能够阻止几何退化式2">5. 双分支为什么能够阻止几何退化？——式（2）</h2>
+<h3 id="先理解梯度泄漏到几何分支的问题">5.1 先理解梯度“泄漏”到几何分支的问题</h3>
+<p>如果一个网络同时预测点坐标 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="bold"><mi>𝛍</mi></mstyle><mi>θ</mi></msub><annotation encoding="application/x-tex">\boldsymbol\mu_\theta</annotation></semantics></math> 和颜色、形状等属性 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="bold"><mi>𝛏</mi></mstyle><mi>θ</mi></msub><annotation encoding="application/x-tex">\boldsymbol\xi_\theta</annotation></semantics></math>，并只使用图像损失训练，那么梯度为</p>
+<p><span class="numbered-equation" id="equation-13"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><mrow><mstyle mathvariant="normal"><mi>d</mi></mstyle><mi>L</mi></mrow><mrow><mstyle mathvariant="normal"><mi>d</mi></mstyle><mi>θ</mi></mrow></mfrac><mo>=</mo><munder><munder><mrow><mfrac><mrow><mi>∂</mi><mi>L</mi></mrow><mrow><mi>∂</mi><mstyle mathvariant="bold"><mi>𝛍</mi></mstyle></mrow></mfrac><mfrac><mrow><mi>∂</mi><mstyle mathvariant="bold"><mi>𝛍</mi></mstyle></mrow><mrow><mi>∂</mi><mi>θ</mi></mrow></mfrac></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">位置变化的梯度路径</mtext></munder><mo>+</mo><munder><munder><mrow><mfrac><mrow><mi>∂</mi><mi>L</mi></mrow><mrow><mi>∂</mi><mstyle mathvariant="bold"><mi>𝛏</mi></mstyle></mrow></mfrac><mfrac><mrow><mi>∂</mi><mstyle mathvariant="bold"><mi>𝛏</mi></mstyle></mrow><mrow><mi>∂</mi><mi>θ</mi></mrow></mfrac></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">属性变化的梯度路径</mtext></munder><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\frac{\mathrm dL}{\mathrm d\theta}=
+\underbrace{\frac{\partial L}{\partial\boldsymbol\mu}
+\frac{\partial\boldsymbol\mu}{\partial\theta}}_{\text{位置变化的梯度路径}}
++\underbrace{\frac{\partial L}{\partial\boldsymbol\xi}
+\frac{\partial\boldsymbol\xi}{\partial\theta}}_{\text{属性变化的梯度路径}}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 13">(13)</span></span></p>
+<p>举一个典型的歧义：某个预测点位置略有偏差，导致渲染的纹理边缘偏移。为了减小像素误差，网络可以：</p>
+<ul>
+<li>正确地学习高斯的尺度、旋转和颜色分布；</li>
+<li>直接把点中心向产生正确像素的位置挪动。</li>
+</ul>
+<p>第二条路径可能更容易快速降低当前训练视图的损失，但如果这个“挪点”只对有限角度有效，换到大基线视角就可能出现扭曲、浮动表面、深度失真。<strong>图像渲染误差小，并不能唯一保证三维坐标准确</strong>。</p>
+<p>V2 通过冻结几何分支并禁止中心偏移，强制令 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>∂</mi><mstyle mathvariant="bold"><mi>𝛍</mi></mstyle><mi>/</mi><mi>∂</mi><msub><mi>θ</mi><mstyle mathvariant="normal"><mi>a</mi><mi>t</mi><mi>t</mi><mi>r</mi></mstyle></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\partial\boldsymbol\mu/\partial\theta_{\mathrm{attr}}=0</annotation></semantics></math>，让像素损失主要通过 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝛏</mi></mstyle><annotation encoding="application/x-tex">\boldsymbol\xi</annotation></semantics></math> 被解释。</p>
+<h3 id="为什么不是只冻结整个-da3然后训练一个小高斯头">5.2 为什么不是只冻结整个 DA3，然后训练一个小高斯头？</h3>
+<p>V2 对属性分支的最后十个 Transformer 模块进行微调，而非只训练高斯头。原因是<strong>原来用于深度、相机的表示不一定包含最适于渲染的颜色边缘、透明度与椭球形状线索</strong>。允许属性分支微调高层特征，既能改变对渲染有用的视觉特征，又不会影响冻结分支的深度估计。</p>
+<p>注意这不是“两套模型完全独立训练”：两者使用同一 DA3 预训练参数初始化，但微调后不同分支的参数独立。训练成本也不等同于只加一个很小的预测头。实验表 2 的 <code>w/o A</code> 说明属性骨干微调有帮助，但 ETH3D 上 LPIPS 仅改善约 1.1%，DTU 上改善约 20.8%，存在明显场景依赖。</p>
+<h3 id="区分三种冻结">5.3 区分三种“冻结”</h3>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 45%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>对象</th>
+<th>V2 如何处理</th>
+<th>为什么重要</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>几何分支权重 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mstyle mathvariant="normal"><mi>g</mi><mi>e</mi><mi>o</mi></mstyle></msub><annotation encoding="application/x-tex">\theta_{\mathrm{geo}}</annotation></semantics></math></td>
+<td>训练时始终冻结</td>
+<td>防止几何估计被渲染损失改坏</td>
+</tr>
+<tr class="even">
+<td>高斯中心 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝛍</mi></mstyle><annotation encoding="application/x-tex">\boldsymbol\mu</annotation></semantics></math></td>
+<td>细化前后都固定；无学习式偏移</td>
+<td>阻断通过位置补偿属性误差</td>
+</tr>
+<tr class="odd">
+<td>属性分支权重 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mstyle mathvariant="normal"><mi>a</mi><mi>t</mi><mi>t</mi><mi>r</mi></mstyle></msub><annotation encoding="application/x-tex">\theta_{\mathrm{attr}}</annotation></semantics></math></td>
+<td>第一阶段仅微调最后十个 Transformer 模块和高斯头；第二阶段冻结</td>
+<td>允许学习用于渲染的特征和高斯属性</td>
+</tr>
+<tr class="even">
+<td>高斯属性 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝛏</mi></mstyle><annotation encoding="application/x-tex">\boldsymbol\xi</annotation></semantics></math></td>
+<td>前馈预测，第二阶段可以进一步更新</td>
+<td>调节可见性、形状和颜色</td>
+</tr>
+<tr class="odd">
+<td>第二阶段细化器权重</td>
+<td>训练时更新，测试时不变</td>
+<td>测试时更新的是场景属性而非网络模型</td>
+</tr>
+</tbody>
+</table>
+<h2 id="最重要的几何推导为什么要做尺度归一化和-umeyama-对齐式349">6. 最重要的几何推导：为什么要做尺度归一化和 Umeyama 对齐？——式（3）（4）（9）</h2>
+<figure>
+<img src="assets/figure-04.png" alt="image-20261125143345307" /><figcaption aria-hidden="true">image-20261125143345307</figcaption>
+</figure>
+<h3 id="相机反投影的初等推导">6.1 相机反投影的初等推导</h3>
+<p>针孔相机（Pinhole Camera）满足</p>
+<p><span class="numbered-equation" id="equation-14"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mrow><mo stretchy="true" form="prefix">[</mo><mtable><mtr><mtd columnalign="center"><mi>u</mi></mtd></mtr><mtr><mtd columnalign="center"><mi>v</mi></mtd></mtr><mtr><mtd columnalign="center"><mn>1</mn></mtd></mtr></mtable><mo stretchy="true" form="postfix">]</mo></mrow><mo>=</mo><mi>K</mi><mrow><mo stretchy="true" form="prefix">[</mo><mtable><mtr><mtd columnalign="center"><msub><mi>X</mi><mi>c</mi></msub></mtd></mtr><mtr><mtd columnalign="center"><msub><mi>Y</mi><mi>c</mi></msub></mtd></mtr><mtr><mtd columnalign="center"><msub><mi>Z</mi><mi>c</mi></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">]</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mi>K</mi><mo>=</mo><mrow><mo stretchy="true" form="prefix">[</mo><mtable><mtr><mtd columnalign="center"><msub><mi>f</mi><mi>x</mi></msub></mtd><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><msub><mi>c</mi><mi>x</mi></msub></mtd></mtr><mtr><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><msub><mi>f</mi><mi>y</mi></msub></mtd><mtd columnalign="center"><msub><mi>c</mi><mi>y</mi></msub></mtd></mtr><mtr><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><mn>0</mn></mtd><mtd columnalign="center"><mn>1</mn></mtd></mtr></mtable><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\lambda\begin{bmatrix}u\\v\\1\end{bmatrix}
+=K\begin{bmatrix}X_c\\Y_c\\Z_c\end{bmatrix},
+\quad
+K=\begin{bmatrix}f_x&amp;0&amp;c_x\\0&amp;f_y&amp;c_y\\0&amp;0&amp;1\end{bmatrix}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 14">(14)</span></span></p>
+<p>假设模型预测的是相机 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>z</mi><annotation encoding="application/x-tex">z</annotation></semantics></math> 轴深度 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo>,</mo><mi>v</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>Z</mi><mi>c</mi></msub></mrow><annotation encoding="application/x-tex">D(u,v)=Z_c</annotation></semantics></math>，那么</p>
+<p><span class="numbered-equation" id="equation-15"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mi>c</mi></msub><mo>=</mo><mi>D</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo>,</mo><mi>v</mi><mo stretchy="false" form="postfix">)</mo><msup><mi>K</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><mstyle mathvariant="bold"><mi>𝐮</mi></mstyle><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\mathbf x_c=D(u,v)K^{-1}\mathbf u.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 15">(15)</span></span></p>
+<p>再通过相机到世界坐标变换（Camera-to-world Transform）</p>
+<p><span class="numbered-equation" id="equation-16"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mi>w</mi></msub><mo>=</mo><msub><mi>R</mi><mrow><mi>w</mi><mi>c</mi></mrow></msub><msub><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mi>c</mi></msub><mo>+</mo><msub><mstyle mathvariant="bold"><mi>𝐭</mi></mstyle><mrow><mi>w</mi><mi>c</mi></mrow></msub><mo>=</mo><mi>D</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo>,</mo><mi>v</mi><mo stretchy="false" form="postfix">)</mo><msub><mi>R</mi><mrow><mi>w</mi><mi>c</mi></mrow></msub><msup><mi>K</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><mstyle mathvariant="bold"><mi>𝐮</mi></mstyle><mo>+</mo><msub><mstyle mathvariant="bold"><mi>𝐭</mi></mstyle><mrow><mi>w</mi><mi>c</mi></mrow></msub><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\mathbf x_w=R_{wc}\mathbf x_c+\mathbf t_{wc}
+=D(u,v)R_{wc}K^{-1}\mathbf u+\mathbf t_{wc},
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 16">(16)</span></span></p>
+<p>就得到论文式（4）。其中 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="bold"><mi>𝐭</mi></mstyle><mrow><mi>w</mi><mi>c</mi></mrow></msub><annotation encoding="application/x-tex">\mathbf t_{wc}</annotation></semantics></math> 正是相机中心在世界坐标系中的位置。若你把世界到相机的平移直接代入，则会算错：<strong>相机坐标约定必须前后一致</strong>。</p>
+<h3 id="为什么预测深度没有天然的米制尺度">6.2 为什么预测深度没有天然的米制尺度？</h3>
+<p>一般的多视图几何重建存在尺度规范自由度（Scale Gauge Freedom）。如果将所有三维点与所有相机平移乘上 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda&gt;0</annotation></semantics></math>，相机内参和旋转不变，投影像素依然相同：</p>
+<p><span class="numbered-equation" id="equation-17"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>π</mi><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">(</mo><mi>R</mi><mo stretchy="false" form="prefix">(</mo><mi>λ</mi><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo>−</mo><mi>λ</mi><mstyle mathvariant="bold"><mi>𝐭</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">)</mo><mo>=</mo><mi>π</mi><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">(</mo><mi>λ</mi><mi>R</mi><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo>−</mo><mstyle mathvariant="bold"><mi>𝐭</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">)</mo><mo>=</mo><mi>π</mi><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">(</mo><mi>R</mi><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo>−</mo><mstyle mathvariant="bold"><mi>𝐭</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\pi\big(R(\lambda\mathbf x-\lambda\mathbf t)\big)
+=\pi\big(\lambda R(\mathbf x-\mathbf t)\big)
+=\pi\big(R(\mathbf x-\mathbf t)\big),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 17">(17)</span></span></p>
+<p>因为透视投影中 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>π</mi><mo stretchy="false" form="prefix">(</mo><mi>λ</mi><mi>X</mi><mo>,</mo><mi>λ</mi><mi>Y</mi><mo>,</mo><mi>λ</mi><mi>Z</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>f</mi><mi>x</mi></msub><mi>X</mi><mi>/</mi><mi>Z</mi><mo>+</mo><msub><mi>c</mi><mi>x</mi></msub><mo>,</mo><msub><mi>f</mi><mi>y</mi></msub><mi>Y</mi><mi>/</mi><mi>Z</mi><mo>+</mo><msub><mi>c</mi><mi>y</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\pi(\lambda X,\lambda Y,\lambda Z)=(f_xX/Z+c_x, f_yY/Z+c_y)</annotation></semantics></math>，尺度 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math> 抵消了。</p>
+<p>因此，需要把“模型预测的几何单位”和“真实值相机使用的单位”统一起来。但注意：<strong>统一尺度不等于保证真实世界米制尺度</strong>，它只是在训练时让两种数据落到兼容的坐标单位里。</p>
+<h3 id="式3平均径向距离归一化在做什么">6.3 式（3）：平均径向距离归一化在做什么？</h3>
+<p>假设所有候选三维点的世界坐标是 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mi>j</mi></msub><annotation encoding="application/x-tex">\mathbf x_j</annotation></semantics></math>，定义</p>
+<p><span class="numbered-equation" id="equation-18"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mstyle mathvariant="normal"><mi>n</mi><mi>o</mi><mi>r</mi><mi>m</mi></mstyle></msub><mo>=</mo><mfrac><mn>1</mn><msub><mi>N</mi><mi>p</mi></msub></mfrac><munderover><mo>∑</mo><mrow><mi>j</mi><mo>=</mo><mn>1</mn></mrow><msub><mi>N</mi><mi>p</mi></msub></munderover><mo stretchy="false" form="postfix">∥</mo><msub><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mi>j</mi></msub><msub><mo stretchy="false" form="postfix">∥</mo><mn>2</mn></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+s_{\mathrm{norm}}=\frac1{N_p}\sum_{j=1}^{N_p}\|\mathbf x_j\|_2.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 18">(18)</span></span></p>
+<p>再把点、深度与预测相机平移整体除以这个量，归一化点云的平均径向距离便约为 1。</p>
+<p><strong>数值例子</strong>：如果预测点云距参考原点的平均距离是 20 个任意单位，某像素深度预测为 10，那么新深度是 0.5；相机平移 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>4</mn><mo>,</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(4,0,0)</annotation></semantics></math> 被变成 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>0.2</mn><mo>,</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(0.2,0,0)</annotation></semantics></math>。这保留了 10:4 的相对尺度关系，只改变世界的单位。</p>
+<p>为什么这个步骤不能只归一化深度？因为这样会错误地改变相机与点之间的相对位置，产生跨视图不一致。<strong>深度与平移必须成对缩放。</strong></p>
+<h3 id="umeyama-方法的本质是什么">6.4 Umeyama 方法的本质是什么？</h3>
+<p>已知两组对应的相机中心，真实值轨迹 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">{</mo><msubsup><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mi>i</mi><mo>⋆</mo></msubsup><mo stretchy="false" form="postfix">}</mo></mrow><annotation encoding="application/x-tex">\{\mathbf c_i^\star\}</annotation></semantics></math> 与归一化预测轨迹 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">{</mo><msub><mover><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo stretchy="false" form="postfix">}</mo></mrow><annotation encoding="application/x-tex">\{\bar{\mathbf c}_i\}</annotation></semantics></math>，Umeyama 方法试图求解</p>
+<p><span class="numbered-equation" id="equation-19"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>min</mo><mrow><mi>s</mi><mo>&gt;</mo><mn>0</mn><mo>,</mo><mi>Q</mi><mo>∈</mo><mi>S</mi><mi>O</mi><mo stretchy="false" form="prefix">(</mo><mn>3</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mstyle mathvariant="bold"><mi>𝐛</mi></mstyle></mrow></munder><munder><mo>∑</mo><mi>i</mi></munder><mo stretchy="false" form="postfix">∥</mo><msub><mover><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo>−</mo><mo stretchy="false" form="prefix">(</mo><mi>s</mi><mi>Q</mi><msubsup><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mi>i</mi><mo>⋆</mo></msubsup><mo>+</mo><mstyle mathvariant="bold"><mi>𝐛</mi></mstyle><mo stretchy="false" form="postfix">)</mo><msup><mo stretchy="false" form="postfix">∥</mo><mn>2</mn></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\min_{s&gt;0,Q\in SO(3),\mathbf b}
+\sum_i\|\bar{\mathbf c}_i-(sQ\mathbf c_i^\star+\mathbf b)\|^2.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 19">(19)</span></span></p>
+<p>如果不考虑估计旋转的细节，在给定 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Q</mi><annotation encoding="application/x-tex">Q</annotation></semantics></math> 后，将两组坐标分别去中心化，最优尺度满足</p>
+<p><span class="numbered-equation" id="equation-20"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mo>=</mo><mfrac><mrow><munder><mo>∑</mo><mi>i</mi></munder><mo stretchy="false" form="prefix">(</mo><msub><mover><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo>−</mo><mover><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mo accent="true">‾</mo></mover><msup><mo stretchy="false" form="postfix">)</mo><mi>⊤</mi></msup><mi>Q</mi><mo stretchy="false" form="prefix">(</mo><msubsup><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mi>i</mi><mo>⋆</mo></msubsup><mo>−</mo><msup><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mo>⋆</mo></msup><mo stretchy="false" form="postfix">)</mo></mrow><mrow><munder><mo>∑</mo><mi>i</mi></munder><mo stretchy="false" form="postfix">∥</mo><msubsup><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mi>i</mi><mo>⋆</mo></msubsup><mo>−</mo><msup><mstyle mathvariant="bold"><mi>𝐜</mi></mstyle><mo>⋆</mo></msup><msup><mo stretchy="false" form="postfix">∥</mo><mn>2</mn></msup></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+s=\frac{\sum_i(\bar{\mathbf c}_i-\bar{\mathbf c})^\top
+Q(\mathbf c_i^\star-\mathbf c^\star)}
+{\sum_i\|\mathbf c_i^\star-\mathbf c^\star\|^2}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 20">(20)</span></span></p>
+<p>完整 Umeyama 则通过中心化点协方差的奇异值分解（Singular Value Decomposition，SVD），联合求解正交旋转与尺度。<strong>V2 只保留求出的尺度 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>s</mi><mi>C</mi></msub><annotation encoding="application/x-tex">s_C</annotation></semantics></math></strong>，不使用求出的旋转与平移去改变真实值相机，因为两组相机已经分别相对于对应的同一输入参考视图表达。这样可以继续保留真实值相机间可靠的相对朝向。</p>
+<p><strong>第二个数值例子</strong>：如果归一化预测相机中心之间的基线长度约为 0.5，而对应真实值相机基线是 2 米，那么 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>s</mi><mi>C</mi></msub><annotation encoding="application/x-tex">s_C</annotation></semantics></math> 可能约为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0.5</mn><mi>/</mi><mn>2</mn><mo>=</mo><mn>0.25</mn></mrow><annotation encoding="application/x-tex">0.5/2=0.25</annotation></semantics></math> 个归一化单位／米。真实值相机相对于参考相机的平移为 1 米，就缩放为 0.25 个归一化单位。然后用这个位置和归一化预测深度反投影，二者才处于可比较的尺度。</p>
+<h3 id="为什么训练时用真实值位姿很重要">6.5 为什么训练时用真实值位姿很重要？</h3>
+<p>假设预测相机的方向存在 2° 偏差，离相机 5 米的深度点，单纯由角度误差造成的横向位置偏差量级约为</p>
+<p><span class="numbered-equation" id="equation-21"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mi>x</mi><mo>≈</mo><mi>D</mi><mo>tan</mo><mo stretchy="false" form="prefix">(</mo><msup><mn>2</mn><mo>∘</mo></msup><mo stretchy="false" form="postfix">)</mo><mo>≈</mo><mn>5</mn><mo>×</mo><mn>0.0349</mn><mo>=</mo><mn>0.1745</mn><mspace width="0.222em"></mspace><mstyle mathvariant="normal"><mi>m</mi></mstyle><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\Delta x\approx D\tan(2^\circ)\approx 5\times0.0349=0.1745\ \mathrm m.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 21">(21)</span></span></p>
+<p>这个例子说明：很小的相机角度误差，到了远距离也会产生可见的反投影位置误差。如果在构建点云时使用预测相机、在渲染监督时使用真实值目标相机，网络可能被迫通过放大高斯、扭转高斯、调整颜色来吸收相机不匹配。如此得到的属性不一定能迁移到新视角。</p>
+<p>使用真实值输入相机反投影与真实值目标相机监督，就消除了这种训练时不一致的来源之一，但<strong>并没有消除预测深度本身的误差</strong>。这是 V2 方法设计中非常重要的界限。</p>
+<h3 id="对尺度可观测性的一个隐藏限制">6.6 对尺度可观测性的一个隐藏限制</h3>
+<p>式（3）统计的是所有点到参考原点的距离，它本身不保证抵抗飞点离群值；Umeyama 使用输入相机中心，若拍摄轨迹几乎不移动、相机中心极为集中、轨迹退化或预测轨迹有明显畸变，估计的尺度会不稳定。尤其是纯旋转（Pure Rotation）或极低视差（Low Parallax）场景，输入相机中心基线几乎为零，尺度估计的分母会非常小。</p>
+<p>论文没有在主结果中给出按视差、相机轨迹条件数（Condition Number）或位姿误差区间分组的系统性评估，所以不能凭这里的对齐步骤断言所有退化视角都能稳定处理。</p>
+<h2 id="大角度监督为什么是关键式5式8">7. 大角度监督为什么是关键？——式（5）、式（8）</h2>
+<h3 id="从二维图像恢复三维椭球的欠约束性">7.1 从二维图像恢复三维椭球的欠约束性</h3>
+<p>假设正对一个很薄的高斯椭球拍照。在这一视角下，沿观察射线方向的厚度变化可能几乎不影响它在屏幕上的二维投影；你很难单靠这张图判断这个椭球是薄片还是很深的柱体。这就是视角相关的形状歧义（View-dependent Shape Ambiguity）。</p>
+<p>当目标相机从更侧面的方向观察，高斯的长轴／短轴可能投影成截然不同的二维形状，于是网络不得不学习一个能够同时解释多个角度的形状，而不能只把训练相机上的图像涂得好看。</p>
+<p><strong>但要区分</strong>：大角度监督在数学上改善某些形状参数的可辨识性（Identifiability），并不自动恢复所有未观测表面。若目标区域被输入视图遮挡，根本没有对应的真实信息，单纯增加损失角度无法创造真实细节。</p>
+<h3 id="式5为什么是与最近输入相机的角度">7.2 式（5）为什么是“与最近输入相机的角度”？</h3>
+<p>设候选相机光轴 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="bold"><mi>𝐟</mi></mstyle><mi>v</mi></msub><annotation encoding="application/x-tex">\mathbf f_v</annotation></semantics></math> 与第 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math> 个输入相机光轴 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="bold"><mi>𝐟</mi></mstyle><mi>i</mi></msub><annotation encoding="application/x-tex">\mathbf f_i</annotation></semantics></math> 都是单位向量。单位向量内积为夹角余弦：</p>
+<p><span class="numbered-equation" id="equation-22"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mstyle mathvariant="bold"><mi>𝐟</mi></mstyle><mi>v</mi><mi>⊤</mi></msubsup><msub><mstyle mathvariant="bold"><mi>𝐟</mi></mstyle><mi>i</mi></msub><mo>=</mo><mo>cos</mo><msub><mi>θ</mi><mrow><mi>v</mi><mo>,</mo><mi>i</mi></mrow></msub><mo>,</mo><mspace width="2.0em"></mspace><msub><mi>θ</mi><mrow><mi>v</mi><mo>,</mo><mi>i</mi></mrow></msub><mo>=</mo><mo>arccos</mo><mo stretchy="false" form="prefix">(</mo><msubsup><mstyle mathvariant="bold"><mi>𝐟</mi></mstyle><mi>v</mi><mi>⊤</mi></msubsup><msub><mstyle mathvariant="bold"><mi>𝐟</mi></mstyle><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\mathbf f_v^\top\mathbf f_i=\cos\theta_{v,i},
+\qquad \theta_{v,i}=\arccos(\mathbf f_v^\top\mathbf f_i).
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 22">(22)</span></span></p>
+<p>当输入图像有很多张时，若候选目标仅与某一张输入相机的朝向非常接近，就已经属于一个“观察方向不够新”的视角。于是作者取所有角度的最小值 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mo>min</mo><mi>i</mi></msub><msub><mi>θ</mi><mrow><mi>v</mi><mo>,</mo><mi>i</mi></mrow></msub></mrow><annotation encoding="application/x-tex">\min_i\theta_{v,i}</annotation></semantics></math>，让这一分数衡量候选目标距离<strong>最近的输入观察方向</strong>有多远。</p>
+<p>假设输入相机朝向为 0°、10°、25°：</p>
+<ul>
+<li>候选 A 朝向 28°，与最近输入角度差 3°，得分 3°；</li>
+<li>候选 B 朝向 50°，最近角度差 25°，得分 25°；</li>
+<li>候选 C 朝向 12°，最近角度差 2°，得分 2°。</li>
+</ul>
+<p>按照此定义，B 最偏向大角度监督。附录揭示的<strong>实际采样不是永远取最大值</strong>：候选先按此得分分为上下两半，然后以 70% 的概率选择大角度池、30% 选择小角度池，并在池内不放回随机抽取四个目标视图。</p>
+<h3 id="论文的large-angle究竟有多大">7.3 论文的“Large-angle”究竟有多大？</h3>
+<p>图 8 的均值显示，局部插值采样的最近光轴夹角为 12.34°，作者采样为 17.97°，均值差约为 <strong>5.63°</strong>，约 <strong>45.6%</strong> 的相对增加。这是比局部插值更偏向大角度的采样，但不能把其均值夸大成 90°、120° 那样的极端视角。</p>
+<p>注意：<strong>光轴角度（Optical-axis Angle）不等于相机视点基线（Camera Baseline），也不等于场景中每个三维点的真实视差角（Triangulation Angle）。</strong> 两个相机即使朝向平行，只要相距很远，也可能有很大视差；反之，两台相机在同一位置纯旋转，光轴夹角虽大，却无法产生多视图三角测量的有效平移基线。因此，如果研究目标强调几何可测量性，应进一步考虑按点计算视差角、可见性与不确定性，而不能仅依赖光轴夹角。</p>
+<h3 id="式8为什么需要-gt-深度掩码">7.4 式（8）为什么需要 GT 深度掩码？</h3>
+<p>作者在目标视图某像素上读取 GT 深度，将它反投影为三维点，再投影到输入视图。如果输入图像上的深度与投影点的预测深度符合</p>
+<p><span class="numbered-equation" id="equation-23"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>z</mi><mstyle mathvariant="normal"><mi>p</mi><mi>r</mi><mi>o</mi><mi>j</mi></mstyle></msub><mo>−</mo><msub><mi>d</mi><mstyle mathvariant="normal"><mi>s</mi><mi>r</mi><mi>c</mi></mstyle></msub><mo stretchy="false" form="prefix">|</mo><mo>≤</mo><mo>max</mo><mo stretchy="false" form="prefix">(</mo><mn>0.03</mn><mo>,</mo><mn>0.01</mn><msub><mi>d</mi><mstyle mathvariant="normal"><mi>s</mi><mi>r</mi><mi>c</mi></mstyle></msub><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+|z_{\mathrm{proj}}-d_{\mathrm{src}}|
+\le\max(0.03,0.01d_{\mathrm{src}}),
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 23">(23)</span></span></p>
+<p>该目标像素就有来自输入观测的深度一致支持；否则，不把它纳入损失。可以把它理解为一个简单的跨视图可见性与遮挡一致性检查（Visibility / Occlusion Consistency Check）。</p>
+<p>例如采样的输入视图深度是 2 米，则相对阈值为 0.02，绝对阈值 0.03 更大，容许误差 0.03。若深度为 20 米，相对项 0.2 更大，容许误差变为 0.2。</p>
+<p><strong>为什么重要</strong>：目标相机可能看到输入图像中从未出现过的背面与遮挡区域。如果作者直接用这些像素对前馈预测做强监督，任务会包含难以由输入确定的内容。用掩码可以更集中地学习“已观测内容在新视角下应如何渲染”。这也意味着论文的主要实验结论应理解为<strong>在其定义的有效区域上的新视角渲染性能</strong>，不能直接外推为完整新暴露区域的生成质量。</p>
+<h2 id="体素合并不透明度剪枝与离群点可靠性">8. 体素合并、不透明度剪枝与离群点可靠性</h2>
+<h3 id="为什么同一表面会产生很多重复高斯">8.1 为什么同一表面会产生很多重复高斯？</h3>
+<p>输入有 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math> 张图，每张图尺寸约为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>H</mi><mo>×</mo><mi>W</mi></mrow><annotation encoding="application/x-tex">H\times W</annotation></semantics></math>。逐像素反投影的候选点数量量级是 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>H</mi><mi>W</mi></mrow><annotation encoding="application/x-tex">NHW</annotation></semantics></math>。同一张桌面可能同时出现在八张图中，那么不同视图对它的预测会堆积很多位置接近的点；这些冗余点如果全部保留，渲染内存、光栅化速度和不透明度排序都会受到影响。</p>
+<p>作者借鉴 AnySplat 和 WorldMirror 2.0 的体素合并（Voxel Merging），在尺度归一化坐标里按照边长 0.004 的立方体划分空间，将某个体素内的冗余点合并。细化器还利用同一合并分组聚合 DPT 特征。</p>
+<h3 id="为什么-alpha0.01-能选择性去除飞点">8.2 为什么 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>&lt;</mo><mn>0.01</mn></mrow><annotation encoding="application/x-tex">\alpha&lt;0.01</annotation></semantics></math> 能选择性去除飞点？</h3>
+<p>假设一个飞点在某个输入视角看起来颜色接近背景，但换到其他输入或监督视角就出现在不应存在的位置。只要渲染损失足够覆盖这些观察，增大其不透明度可能产生更多错误像素，而降低不透明度能够减少损失。因此，高斯预测头有动力学会“把可疑点变透明”。</p>
+<p>论文使用独立于不透明度的几何标签进行验证：</p>
+<ul>
+<li><strong>几何不一致（Inconsistent）</strong>：在至少两个 GT 观察中进入真实自由空间，且与任何观察到的表面深度都不一致。</li>
+<li><strong>表面一致（Surface-consistent）</strong>：与至少两个观察的表面深度一致，且不违反自由空间。</li>
+<li><strong>不确定（Uncertain）</strong>：既不满足前两种条件之一。</li>
+</ul>
+<p>阈值 0.01 时，论文报告去掉 51.8% 的几何不一致点，而只删除 7.5% 的全部点；保留 93.3% 的表面一致点。<strong>这属于“选择性相关性证据”，而不是不透明度已经被证明为严格校准的几何置信概率。</strong> 研究更进一步可以画出可靠性曲线、精确率—召回率曲线（Precision–Recall Curve）、分场景阈值鲁棒性以及与多视图深度误差的统计关系。</p>
+<h3 id="一项可复算的量相对富集程度">8.3 一项可复算的量：相对富集程度</h3>
+<p>若随机删除全部点的 7.5%，理论上几何不一致点也预计只删除约 7.5%。V2 在同一阈值下删除了 51.8% 的不一致点，这个召回率与全局删除率的比值约为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>51.8</mn><mi>/</mi><mn>7.5</mn><mo>≈</mo><mn>6.91</mn></mrow><annotation encoding="application/x-tex">51.8/7.5\approx6.91</annotation></semantics></math>。这表明被删除集合对几何不一致点存在较强富集（Enrichment）；但并不能直接得出删除集合的<strong>精确率</strong>，因为还需要知道全部点中不一致点的初始占比。</p>
+<h2 id="第一阶段到底怎样训练式1012">9. 第一阶段到底怎样训练？——式（10）—（12）</h2>
+<h3 id="l1-重建误差">9.1 L1 重建误差</h3>
+<p>单像素 RGB 平均绝对误差为</p>
+<p><span class="numbered-equation" id="equation-24"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mi>v</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mfrac><mn>1</mn><mn>3</mn></mfrac><munder><mo>∑</mo><mrow><mi>c</mi><mo>∈</mo><mo stretchy="false" form="prefix">{</mo><mi>R</mi><mo>,</mo><mi>G</mi><mo>,</mo><mi>B</mi><mo stretchy="false" form="postfix">}</mo></mrow></munder><mo stretchy="false" form="prefix">|</mo><msub><mover><mi>I</mi><mo accent="true">̂</mo></mover><mi>v</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo>,</mo><mi>c</mi><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msub><mi>I</mi><mi>v</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo>,</mo><mi>c</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="prefix">|</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+e_v(p)=\frac13\sum_{c\in\{R,G,B\}}|\hat I_v(p,c)-I_v(p,c)|.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 24">(24)</span></span></p>
+<p>它直接鼓励渲染颜色接近 GT。然而，L1 对整体图像感知结构未必敏感，可能偏向得到略显平滑、但像素平均误差较低的结果。</p>
+<h3 id="lpips-感知误差">9.2 LPIPS 感知误差</h3>
+<p>学习感知图像块相似度（Learned Perceptual Image Patch Similarity，LPIPS）将图像输入预训练视觉特征网络（本文采用 VGG 特征），在特征层比较生成图与真实图的局部差异。其基本思想是：人眼对“结构边缘是否正确”的敏感度，可能高于单个 RGB 像素的差值。</p>
+<p>论文用空间 LPIPS（Spatial LPIPS）产生逐位置的距离图，之后与 L1 的误差图等权相加，并用有效像素的总数归一化。若设 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>M</mi><mi>v</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mo>∈</mo><mo stretchy="false" form="prefix">{</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">}</mo></mrow><annotation encoding="application/x-tex">M_v(p)\in\{0,1\}</annotation></semantics></math>，则式（12）可重写为</p>
+<p><span class="numbered-equation" id="equation-25"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mstyle mathvariant="script"><mi>ℒ</mi></mstyle><mstyle mathvariant="normal"><mi>I</mi></mstyle></msub><mo>=</mo><mfrac><mrow><munder><mo>∑</mo><mrow><mi>v</mi><mo>,</mo><mi>p</mi></mrow></munder><msub><mi>M</mi><mi>v</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><msub><mi>e</mi><mi>v</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><munder><mo>∑</mo><mrow><mi>v</mi><mo>,</mo><mi>p</mi></mrow></munder><msub><mi>M</mi><mi>v</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><msub><mi>d</mi><mi>v</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo></mrow><mrow><mo>max</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>,</mo><munder><mo>∑</mo><mrow><mi>v</mi><mo>,</mo><mi>p</mi></mrow></munder><msub><mi>M</mi><mi>v</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\mathcal L_{\mathrm I}=\frac{
+\sum_{v,p}M_v(p)e_v(p)+\sum_{v,p}M_v(p)d_v(p)}
+{\max(1,\sum_{v,p}M_v(p))}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 25">(25)</span></span></p>
+<p>其中 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>max</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>,</mo><mo>⋅</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\max(1,\cdot)</annotation></semantics></math> 避免所有掩码均无效时出现除零。<strong>两个损失项“权重相等”是作者明确写出的训练设置</strong>；不要把第二阶段的 0.8/0.2/0.5 误读成第一阶段的权重。</p>
+<h2 id="第二阶段为什么还要学一个-knn-transformer-细化器">10. 第二阶段：为什么还要学一个 KNN Transformer 细化器？</h2>
+<h3 id="直接-adam-为什么未必高效">10.1 直接 Adam 为什么未必高效？</h3>
+<p>传统逐场景优化把当前所有高斯属性当作变量，反复计算输入图像损失梯度，再按 Adam 的统一更新规则调整。它能在训练相机上降低损失，却不能天然利用跨场景预训练得到的“物理形状与纹理该怎样变化”的经验。</p>
+<p>学习式细化器把梯度本身作为观测特征，再通过 KNN 局部图传播信息。这有两个潜在好处：</p>
+<ol type="1">
+<li>同一个物体表面的相邻高斯通常应具有相似几何属性，空间邻居能提供局部一致性线索。</li>
+<li>网络能够跨场景学习更有针对性的修改方向，不必完全依赖固定梯度下降规则。</li>
+</ol>
+<p>但这是<strong>合理的机制解释，不是已经被作者单独证明的因果结论</strong>。文中只展示与三步 Adam 的比较，并没有完全等算力、等墙钟时间（Wall-clock Time）的广泛优化器对照。</p>
+<h3 id="knn-transformer-的信息是怎样组合的">10.2 KNN Transformer 的信息是怎样组合的？</h3>
+<p>每个高斯有自己的局部状态：</p>
+<ul>
+<li>来自图像的八通道 DPT 投影特征；</li>
+<li>当前高斯的尺度、不透明度、旋转与颜色；</li>
+<li>当前属性对应的渲染梯度；</li>
+<li>邻居距离和邻居特征；</li>
+<li>由前一步保留下来的 16 维隐藏状态。</li>
+</ul>
+<p>这些信息拼接投影到 64 维，经过四层 Transformer；每层对八个最近邻做单头注意力。令 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>i</mi></msub><mo>,</mo><msub><mi>k</mi><mi>j</mi></msub><mo>,</mo><msub><mi>v</mi><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">q_i,k_j,v_j</annotation></semantics></math> 分别是点 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math> 的查询、邻居 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math> 的键和值，那么典型注意力形式为</p>
+<p><span class="numbered-equation" id="equation-26"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mo>Attn</mo><mi>i</mi></msub><mo>=</mo><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mstyle mathvariant="script"><mi>𝒩</mi></mstyle><mo stretchy="false" form="prefix">(</mo><mi>i</mi><mo stretchy="false" form="postfix">)</mo></mrow></munder><munder><munder><mfrac><mrow><mo>exp</mo><mo stretchy="false" form="prefix">(</mo><msubsup><mi>q</mi><mi>i</mi><mi>⊤</mi></msubsup><msub><mi>k</mi><mi>j</mi></msub><mi>/</mi><msqrt><mi>d</mi></msqrt><mo stretchy="false" form="postfix">)</mo></mrow><mrow><munder><mo>∑</mo><mrow><mi>ℓ</mi><mo>∈</mo><mstyle mathvariant="script"><mi>𝒩</mi></mstyle><mo stretchy="false" form="prefix">(</mo><mi>i</mi><mo stretchy="false" form="postfix">)</mo></mrow></munder><mo>exp</mo><mo stretchy="false" form="prefix">(</mo><msubsup><mi>q</mi><mi>i</mi><mi>⊤</mi></msubsup><msub><mi>k</mi><mi>ℓ</mi></msub><mi>/</mi><msqrt><mi>d</mi></msqrt><mo stretchy="false" form="postfix">)</mo></mrow></mfrac><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">注意力权重</mtext></munder><msub><mi>v</mi><mi>j</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\operatorname{Attn}_i=
+\sum_{j\in\mathcal N(i)}
+\underbrace{\frac{\exp(q_i^\top k_j/\sqrt d)}
+{\sum_{\ell\in\mathcal N(i)}\exp(q_i^\top k_\ell/\sqrt d)}}_{\text{注意力权重}}
+v_j.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 26">(26)</span></span></p>
+<p>这是通用的 KNN 注意力原理示意，<strong>并非论文提供的逐行代码实现</strong>。它说明为什么一个点可以借助邻居来决定自己的属性更新。固定中心使邻居图跨细化步骤不变，从而减少重复邻域搜索开销。</p>
+<h3 id="为什么更新尺度要用指数更新不透明度要用-logit">10.3 为什么更新尺度要用指数，更新不透明度要用 Logit？</h3>
+<p>因为参数有不同的定义域：尺度 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">s&gt;0</annotation></semantics></math>，不透明度 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0</mn><mo>&lt;</mo><mi>α</mi><mo>&lt;</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">0&lt;\alpha&lt;1</annotation></semantics></math>，颜色通常也有数值范围，而旋转需要遵守旋转群约束。</p>
+<ul>
+<li><strong>尺度</strong>：<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mstyle mathvariant="normal"><mi>n</mi><mi>e</mi><mi>w</mi></mstyle></msub><mo>=</mo><msub><mi>s</mi><mstyle mathvariant="normal"><mi>o</mi><mi>l</mi><mi>d</mi></mstyle></msub><mo>exp</mo><mo stretchy="false" form="prefix">(</mo><mi>Δ</mi><mo>log</mo><mi>s</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">s_{\mathrm{new}}=s_{\mathrm{old}}\exp(\Delta\log s)</annotation></semantics></math>。指数恒正，因此不可能产生负尺度；<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Δ</mi><mo>log</mo><mi>s</mi></mrow><annotation encoding="application/x-tex">\Delta\log s</annotation></semantics></math> 表示相对比例调整而非绝对加减。</li>
+<li><strong>不透明度</strong>：<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>logit</mo><mo stretchy="false" form="prefix">(</mo><mi>α</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mo>log</mo><mo stretchy="false" form="prefix">[</mo><mi>α</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>α</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\operatorname{logit}(\alpha)=\log[\alpha/(1-\alpha)]</annotation></semantics></math>，在无界实数域更新后用 Sigmoid 变回 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(0,1)</annotation></semantics></math>。</li>
+<li><strong>颜色</strong>：在 RGB Logit 空间更新，再变回 RGB 与零阶 SH 系数。</li>
+<li><strong>旋转</strong>：论文使用局部旋转向量增量，允许学习小幅旋转调整。若使用李群视角，可以将局部旋转增量想象成在 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mi>O</mi><mo stretchy="false" form="prefix">(</mo><mn>3</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">SO(3)</annotation></semantics></math> 附近的切空间（Tangent Space）操作，但论文没有展开完整指数映射推导。</li>
+</ul>
+<h3 id="为什么增加限制-atanhmathrmraw">10.4 为什么增加限制 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi><mo>tanh</mo><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="normal"><mi>r</mi><mi>a</mi><mi>w</mi></mstyle><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">a\tanh(\mathrm{raw})</annotation></semantics></math>？</h3>
+<p>双曲正切函数满足 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>tanh</mo><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>∈</mo><mo stretchy="false" form="prefix">(</mo><mo>−</mo><mn>1</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\tanh(x)\in(-1,1)</annotation></semantics></math>。乘上系数 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>a</mi><annotation encoding="application/x-tex">a</annotation></semantics></math>，可以限制每步在不透明度 Logit、旋转和 RGB Logit 中的更新幅度：分别最多接近 0.1、0.25、1.0。隐藏状态增量则限制在 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mo>−</mo><mn>0.1</mn><mo>,</mo><mn>0.1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(-0.1,0.1)</annotation></semantics></math>。</p>
+<p>限制不是说最终属性变化一定小于这些数：多步更新会累计；尺度的对数更新甚至没有残差裁剪，所以仍可能变化很大。作者用分参数空间约束，目的是避免某一类更新太激进。</p>
+<h2 id="一阶代理损失如何实现能训练却不求二阶导式1718">11. 一阶代理损失如何实现“能训练，却不求二阶导”？——式（17）（18）</h2>
+<p>细化网络输入的一个重要特征是当前高斯属性的渲染梯度</p>
+<p><span class="numbered-equation" id="equation-27"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="bold"><mi>𝐠</mi></mstyle><mo>=</mo><mfrac><mrow><mi>∂</mi><msub><mi>L</mi><mstyle mathvariant="normal"><mi>r</mi><mi>e</mi><mi>n</mi><mi>d</mi><mi>e</mi><mi>r</mi></mstyle></msub></mrow><mrow><mi>∂</mi><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\mathbf g=\frac{\partial L_{\mathrm{render}}}{\partial\mathbf x}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 27">(27)</span></span></p>
+<p>如果训练细化网络时保留从 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝐠</mi></mstyle><annotation encoding="application/x-tex">\mathbf g</annotation></semantics></math> 回到 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><annotation encoding="application/x-tex">\mathbf x</annotation></semantics></math> 的计算图，进一步求 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>∂</mi><mstyle mathvariant="bold"><mi>𝐠</mi></mstyle><mi>/</mi><mi>∂</mi><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle></mrow><annotation encoding="application/x-tex">\partial\mathbf g/\partial\mathbf x</annotation></semantics></math> 就涉及海森矩阵（Hessian），即二阶导数（Second-order Derivatives）。对数百万高斯与复杂光栅化过程来说，这会造成显著的时间和显存成本。</p>
+<h3 id="停止梯度stop-gradient是什么">11.1 停止梯度（Stop-gradient）是什么？</h3>
+<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>sg</mo><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\operatorname{sg}(x)</annotation></semantics></math> 在前向计算时返回与 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math> 相同的数值，但在反向传播时视作常数。用 PyTorch 类比，就是 <code>x.detach()</code>，而不是 <code>x.clone()</code>。</p>
+<p>于是可以先构造一个与网络更新结果数值相同的独立叶张量 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="bold"><mi>𝐳</mi></mstyle><mo>=</mo><mo>sg</mo><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathbf z=\operatorname{sg}(\mathbf x)</annotation></semantics></math>，在它上面计算渲染损失的梯度 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="bold"><mi>𝐫</mi></mstyle><mo>=</mo><mo>sg</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>∇</mi><mstyle mathvariant="bold"><mi>𝐳</mi></mstyle></msub><mi>L</mi><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐳</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathbf r=\operatorname{sg}(\nabla_{\mathbf z}L(\mathbf z))</annotation></semantics></math>。接着把这个梯度当作固定系数参与外层训练，而不让它本身的求导图继续传播。</p>
+<h3 id="代理损失的严谨推导">11.2 代理损失的严谨推导</h3>
+<p>定义</p>
+<p><span class="numbered-equation" id="equation-28"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>L</mi><mstyle mathvariant="normal"><mi>p</mi><mi>r</mi><mi>o</mi><mi>x</mi><mi>y</mi></mstyle></msub><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo>=</mo><munder><munder><mrow><mo>sg</mo><mo stretchy="false" form="prefix">(</mo><mi>L</mi><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐳</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">固定的损失标量</mtext></munder><mo>+</mo><munder><munder><mrow><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">⟨</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo>−</mo><mo>sg</mo><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mstyle mathvariant="bold"><mi>𝐫</mi></mstyle><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">⟩</mo></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">前向为零，反向含梯度</mtext></munder><mi>.</mi></mrow><annotation encoding="application/x-tex">
+L_{\mathrm{proxy}}(\mathbf x)=
+\underbrace{\operatorname{sg}(L(\mathbf z))}_{\text{固定的损失标量}}
++\underbrace{\big\langle\mathbf x-\operatorname{sg}(\mathbf x),\mathbf r\big\rangle}_{\text{前向为零，反向含梯度}}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 28">(28)</span></span></p>
+<p><strong>前向值</strong>：由于 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>sg</mo><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\operatorname{sg}(\mathbf x)</annotation></semantics></math> 与 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><annotation encoding="application/x-tex">\mathbf x</annotation></semantics></math> 的数值完全一致，<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo>−</mo><mo>sg</mo><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\mathbf x-\operatorname{sg}(\mathbf x)=0</annotation></semantics></math>，所以</p>
+<p><span class="numbered-equation" id="equation-29"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>L</mi><mstyle mathvariant="normal"><mi>p</mi><mi>r</mi><mi>o</mi><mi>x</mi><mi>y</mi></mstyle></msub><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>L</mi><mo stretchy="false" form="prefix">(</mo><mstyle mathvariant="bold"><mi>𝐳</mi></mstyle><mo stretchy="false" form="postfix">)</mo><mspace width="1.0em"></mspace><mtext mathvariant="normal">（数值相等）</mtext><mi>.</mi></mrow><annotation encoding="application/x-tex">
+L_{\mathrm{proxy}}(\mathbf x)=L(\mathbf z)
+\quad\text{（数值相等）}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 29">(29)</span></span></p>
+<p><strong>对 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><annotation encoding="application/x-tex">\mathbf x</annotation></semantics></math> 求导</strong>：第一项停止梯度，导数为 0；第二项因为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mstyle mathvariant="bold"><mi>𝐫</mi></mstyle><annotation encoding="application/x-tex">\mathbf r</annotation></semantics></math> 已分离，所以</p>
+<p><span class="numbered-equation" id="equation-30"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><mrow><mi>∂</mi><msub><mi>L</mi><mstyle mathvariant="normal"><mi>p</mi><mi>r</mi><mi>o</mi><mi>x</mi><mi>y</mi></mstyle></msub></mrow><mrow><mi>∂</mi><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle></mrow></mfrac><mo>=</mo><mstyle mathvariant="bold"><mi>𝐫</mi></mstyle><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\frac{\partial L_{\mathrm{proxy}}}{\partial\mathbf x}=\mathbf r.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 30">(30)</span></span></p>
+<p>如果 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle><mo>=</mo><msub><mi>f</mi><mstyle mathvariant="bold"><mi>𝛉</mi></mstyle></msub><mo stretchy="false" form="prefix">(</mo><mo>⋅</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathbf x=f_{\boldsymbol\theta}(\cdot)</annotation></semantics></math> 是细化网络的输出，那么由链式法则（Chain Rule）</p>
+<p><span class="numbered-equation" id="equation-31"><span class="equation-expression"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><menclose notation="box"><mrow><msub><mi>∇</mi><mstyle mathvariant="bold"><mi>𝛉</mi></mstyle></msub><msub><mi>L</mi><mstyle mathvariant="normal"><mi>p</mi><mi>r</mi><mi>o</mi><mi>x</mi><mi>y</mi></mstyle></msub><mo>=</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mrow><mi>∂</mi><mstyle mathvariant="bold"><mi>𝐱</mi></mstyle></mrow><mrow><mi>∂</mi><mstyle mathvariant="bold"><mi>𝛉</mi></mstyle></mrow></mfrac><mo stretchy="true" form="postfix">)</mo></mrow><mi>⊤</mi></msup><mstyle mathvariant="bold"><mi>𝐫</mi></mstyle></mrow></menclose><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\boxed{\nabla_{\boldsymbol\theta}L_{\mathrm{proxy}}=
+\left(\frac{\partial\mathbf x}{\partial\boldsymbol\theta}\right)^\top
+\mathbf r}.
+</annotation></semantics></math></span><span class="equation-number" aria-label="Equation 31">(31)</span></span></p>
+<p>这就是式（18）。其物理含义是：<strong>让细化网络沿渲染损失的一阶下降方向学习，但不反传产生这个梯度本身所涉及的二阶导数</strong>。训练第 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> 步时，外层损失仍按 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>0.9</mn><mrow><msub><mi>K</mi><mi>r</mi></msub><mo>−</mo><mi>k</mi></mrow></msup><annotation encoding="application/x-tex">0.9^{K_r-k}</annotation></semantics></math> 加权。</p>
+<h2 id="实验">12. 实验</h2>
+<h3 id="训练和评估有两个不相同的-n-范围">12.1 训练和评估有两个不相同的 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math> 范围</h3>
+<p>训练：随机抽取 <strong>4—12</strong> 张输入图，目标图固定四张；测试：<strong>4、8、16</strong> 张输入图，目标图仍是四张。这意味着作者包含了训练视图数范围之外的 16 视图评估。模型能够接收更多图像，并不自动证明无限扩展；原论文在 KITTI 上使用滑动窗口处理千帧序列，不等于所有千帧一次进入网络。</p>
+<h3 id="训练数据计算资源时间">12.2 训练数据、计算资源、时间</h3>
+<table>
+<thead>
+<tr class="header">
+<th>项目</th>
+<th>论文原始设置</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>数据混合</td>
+<td>Hypersim 60%，Raw3D 10%，ScanNet++ 30%</td>
+</tr>
+<tr class="even">
+<td>Stage I 训练参数</td>
+<td>属性分支最后 10 个 Transformer 模块 + 高斯头</td>
+</tr>
+<tr class="odd">
+<td>Stage I 步数</td>
+<td>25,000 步，约 48 小时</td>
+</tr>
+<tr class="even">
+<td>Stage I 峰值学习率</td>
+<td>骨干 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>10</mn><mrow><mo>−</mo><mn>6</mn></mrow></msup><annotation encoding="application/x-tex">10^{-6}</annotation></semantics></math>，高斯头 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mo>×</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>4</mn></mrow></msup></mrow><annotation encoding="application/x-tex">2\times10^{-4}</annotation></semantics></math></td>
+</tr>
+<tr class="odd">
+<td>Stage II 训练参数</td>
+<td>DPT 特征投影 + KNN Transformer 细化器</td>
+</tr>
+<tr class="even">
+<td>Stage II 步数</td>
+<td>5,000 步，约 13 小时</td>
+</tr>
+<tr class="odd">
+<td>总硬件</td>
+<td>16 × H20 GPU；全局批大小 16</td>
+</tr>
+<tr class="even">
+<td>优化器</td>
+<td>AdamW，<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mn>0.9</mn><mo>,</mo><mn>0.95</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\beta=(0.9,0.95)</annotation></semantics></math>，全局梯度裁剪 1.0</td>
+</tr>
+<tr class="odd">
+<td>测试三步细化</td>
+<td>固定网络权重，更新尺度、不透明度、旋转、颜色</td>
+</tr>
+<tr class="even">
+<td>高斯中心</td>
+<td>固定；合并后剪枝阈值 0.01</td>
+</tr>
+</tbody>
+</table>
+<p>只把两阶段的墙钟时间相加约为 <strong>61 小时</strong>，是作者给出的训练耗时之和，不包含 DA3 预训练、数据预处理、推理部署、全部基线评估与实验反复试错的成本。</p>
+<h3 id="感知质量像素质量与几何质量区别">12.3 感知质量、像素质量与几何质量区别</h3>
+<table>
+<thead>
+<tr class="header">
+<th>评价对象</th>
+<th>常用指标</th>
+<th>能证明什么</th>
+<th>不能证明什么</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>渲染的逐像素误差</td>
+<td>PSNR、SSIM</td>
+<td>图像与真实视图在像素和局部结构层面的接近程度</td>
+<td>绝对三维距离正确</td>
+</tr>
+<tr class="even">
+<td>学习感知质量</td>
+<td>LPIPS</td>
+<td>深层图像特征意义上的感知相似性</td>
+<td>点云没有漂移、几何是真实表面</td>
+</tr>
+<tr class="odd">
+<td>结构与纹理感知</td>
+<td>DISTS</td>
+<td>感知结构与纹理的一致性</td>
+<td>米制尺度准确、法向量正确</td>
+</tr>
+<tr class="even">
+<td>三维几何</td>
+<td>深度 MAE/RMSE、点到面距离、Chamfer Distance、F-score</td>
+<td>几何位置／表面是否接近参考</td>
+<td>渲染必然感知更好</td>
+</tr>
+<tr class="odd">
+<td>真实尺度</td>
+<td>尺度误差、绝对轨迹误差、测距偏差、长度相对误差</td>
+<td>是否具有可测量性（Metric Accuracy）</td>
+<td>纹理是否逼真</td>
+</tr>
+</tbody>
+</table>
+      </article>
+    </div>
+  </main>
+
+  <div class="article-lightbox" id="articleLightbox" hidden role="dialog" aria-modal="true" aria-label="图片预览">
+    <button class="article-lightbox-backdrop" type="button" data-close aria-label="关闭预览"></button>
+    <div class="article-lightbox-panel">
+      <button class="article-lightbox-close" type="button" data-close aria-label="关闭">×</button>
+      <button class="article-lightbox-nav article-lightbox-prev" type="button" data-prev aria-label="上一张">‹</button>
+      <img id="articleLightboxImage" src="" alt="" />
+      <button class="article-lightbox-nav article-lightbox-next" type="button" data-next aria-label="下一张">›</button>
+      <p id="articleLightboxCount" class="article-lightbox-count"></p>
+    </div>
+  </div>
+
+  <footer class="footer"><p>© <span id="year"></span> Huiqing Zhang.</p></footer>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script src="../../article-gallery.js?v=20261102-2"></script>
+</body>
+</html>

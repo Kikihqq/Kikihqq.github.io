@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 227" role="img" aria-labelledby="title desc">
+<title id="title">计算机操作 · 观察、行动、复查</title><desc id="desc">动作改变环境后，新的观察进入下一轮。示意可观察的执行过程，未绘制内部网络。</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#5b7185"/></marker></defs>
+<rect x="1" y="1" width="758" height="225" rx="12" fill="#f9fbfd" stroke="#d5e2eb"/>
+<g font-family="system-ui, PingFang SC, Microsoft YaHei, sans-serif" fill="#253d51">
+<text x="20" y="31" font-size="18" font-weight="700">计算机操作 · 观察、行动、复查</text>
+<path d="M178 72H185.5V72H193" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M362 72H368.5V72H375" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M544 72H553.5V72H563" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M650 93V128" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M462 93V128" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M650 174V191H280V179" fill="none" stroke="#5b7185" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M280 132V97" fill="none" stroke="#5b7185" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<rect x="14" y="51" width="164" height="42" rx="7" fill="#e7f1f6" stroke="#b6c8d4"/>
+<text x="96" y="77" text-anchor="middle" font-size="14" font-weight="650">用户任务</text>
+<rect x="198" y="51" width="164" height="42" rx="7" fill="#e7f1f6" stroke="#b6c8d4"/>
+<text x="280" y="77" text-anchor="middle" font-size="14" font-weight="650">截图 / 文件 / 工具结果</text>
+<rect x="380" y="51" width="164" height="42" rx="7" fill="#e6f2eb" stroke="#b6c8d4"/>
+<text x="462" y="77" text-anchor="middle" font-size="14" font-weight="650">模型选择下一步</text>
+<rect x="568" y="51" width="164" height="42" rx="7" fill="#f1eaf5" stroke="#b6c8d4"/>
+<text x="650" y="77" text-anchor="middle" font-size="14" font-weight="650">执行框架与工具</text>
+<rect x="380" y="132" width="164" height="42" rx="7" fill="#faeedf" stroke="#b6c8d4"/>
+<text x="462" y="158" text-anchor="middle" font-size="14" font-weight="650">检查后交付</text>
+<rect x="198" y="132" width="164" height="42" rx="7" fill="#e7f1f6" stroke="#b6c8d4"/>
+<text x="280" y="158" text-anchor="middle" font-size="14" font-weight="650">新的环境观察</text>
+<rect x="568" y="132" width="164" height="42" rx="7" fill="#f1eaf5" stroke="#b6c8d4"/>
+<text x="650" y="158" text-anchor="middle" font-size="14" font-weight="650">动作改变环境</text>
+<text x="20" y="211" font-size="12" fill="#465c70">动作改变环境后，新的观察进入下一轮。示意可观察的执行过程，未绘制内部网络。</text></g></svg>
